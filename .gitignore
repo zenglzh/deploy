@@ -1,0 +1,5 @@
+bin/
+classes/
+cached.mark
+caching.mark
+cache.log
