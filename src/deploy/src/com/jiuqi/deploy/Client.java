@@ -1,6 +1,6 @@
 package com.jiuqi.deploy;
 
-import com.jiuqi.deplay.ui.MainFrame;
+import com.jiuqi.deploy.ui.MainFrame;
 
 /**
  * @author zenglizhi
