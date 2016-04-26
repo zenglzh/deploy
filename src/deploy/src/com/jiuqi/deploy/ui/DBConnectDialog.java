@@ -2,18 +2,25 @@ package com.jiuqi.deploy.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
@@ -58,19 +65,16 @@ public class DBConnectDialog extends JDialog {
 		}
 	}
 
-
 	private void initsetting() {
 		this.settingsManager = SettingsManagerFactory.getSettingsManager();
+		this.connectionsInfo = settingsManager.getConnectionsInfo();
+		if (null == connectionsInfo) {
+			connectionsInfo = new ArrayList<ConnectionInfo>();
+		}
 		DatabaseConnectionInfo dbconnectionInfo = pageContxt.getConnectionInfo();
-		if (null == dbconnectionInfo) {// 从系统记录中获取上传存的值
-			ArrayList<ConnectionInfo> connectionsInfoList = settingsManager.getConnectionsInfo();
-			if (null != connectionsInfoList && !connectionsInfoList.isEmpty()) {
-				ConnectionInfo connectionInfo = connectionsInfoList.get(0);
-				pageContxt.setConnectionInfo(connectionInfo.getDatabaseConnectionInfo());
-			} else {
-				connectionsInfoList = new ArrayList<ConnectionInfo>();
-			}
-			// connectionInfo = connectionsInfo.
+		if (null == dbconnectionInfo && !connectionsInfo.isEmpty()) {// 从系统记录中获取上传存的值
+			ConnectionInfo connectionInfo = connectionsInfo.get(connectionsInfo.size() - 1);
+			pageContxt.setConnectionInfo(connectionInfo.getDatabaseConnectionInfo());
 		}
 	}
 
@@ -82,17 +86,17 @@ public class DBConnectDialog extends JDialog {
 		this.pageContxt = pageContext;
 		initsetting();
 		setTitle("\u6570\u636E\u5E93\u8FDE\u63A5");
-		setBounds(100, 100, 393, 327);
+		setBounds(100, 100, 375, 327);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		contentPanel.setLayout(new FormLayout(
 				new ColumnSpec[] { FormSpecs.RELATED_GAP_COLSPEC, ColumnSpec.decode("max(53dlu;default)"),
 						FormSpecs.RELATED_GAP_COLSPEC, ColumnSpec.decode("max(97dlu;default):grow"),
-						FormSpecs.RELATED_GAP_COLSPEC, FormSpecs.DEFAULT_COLSPEC, FormSpecs.RELATED_GAP_COLSPEC,
+						FormSpecs.RELATED_GAP_COLSPEC, ColumnSpec.decode("13dlu"), FormSpecs.RELATED_GAP_COLSPEC,
 						ColumnSpec.decode("default:grow"), },
 				new RowSpec[] { FormSpecs.RELATED_GAP_ROWSPEC, FormSpecs.DEFAULT_ROWSPEC, FormSpecs.RELATED_GAP_ROWSPEC,
-						FormSpecs.DEFAULT_ROWSPEC, FormSpecs.RELATED_GAP_ROWSPEC, FormSpecs.DEFAULT_ROWSPEC,
+						RowSpec.decode("13dlu"), FormSpecs.RELATED_GAP_ROWSPEC, FormSpecs.DEFAULT_ROWSPEC,
 						FormSpecs.RELATED_GAP_ROWSPEC, FormSpecs.DEFAULT_ROWSPEC, FormSpecs.RELATED_GAP_ROWSPEC,
 						FormSpecs.DEFAULT_ROWSPEC, FormSpecs.RELATED_GAP_ROWSPEC, FormSpecs.DEFAULT_ROWSPEC,
 						FormSpecs.RELATED_GAP_ROWSPEC, FormSpecs.DEFAULT_ROWSPEC, FormSpecs.RELATED_GAP_ROWSPEC,
@@ -110,6 +114,25 @@ public class DBConnectDialog extends JDialog {
 			t_database = new JTextField();
 			contentPanel.add(t_database, "4, 4, fill, default");
 			t_database.setColumns(10);
+		}
+		{
+			JPanel panel = new JPanel();
+			FlowLayout flowLayout = (FlowLayout) panel.getLayout();
+			contentPanel.add(panel, "6, 4, fill, fill");
+			{
+				JMenuBar menuBar = new JMenuBar();
+				panel.add(menuBar);
+				{
+					JMenu mn_db = new JMenu("...");
+					if (null != connectionsInfo) {
+						for (int i = connectionsInfo.size() - 1; i >= 0; i--) {
+							ConnectionInfo connectionInfo = connectionsInfo.get(i);
+							mn_db.add(addDBMenuLocal(connectionInfo.getDatabaseConnectionInfo()));
+						}
+					}
+					menuBar.add(mn_db);
+				}
+			}
 		}
 		{
 			JLabel lblNewLabel_1 = new JLabel("\u670D\u52A1\u5730\u5740");
@@ -183,7 +206,7 @@ public class DBConnectDialog extends JDialog {
 			buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
 			getContentPane().add(buttonPane, BorderLayout.SOUTH);
 			{
-				final JButton okButton = new JButton("\u786E\u5B9A");
+				final JButton okButton = new JButton("\u8FDE\u63A5");
 				okButton.setActionCommand("OK");
 				okButton.addActionListener(new ActionListener() {
 
@@ -213,6 +236,18 @@ public class DBConnectDialog extends JDialog {
 		fillFields(this.pageContxt.getConnectionInfo());
 	}
 
+	private JMenuItem addDBMenuLocal(final DatabaseConnectionInfo databaseConnectionInfo) {
+		JMenuItem mitem = new JMenuItem(databaseConnectionInfo.toString());
+		mitem.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				fillFields(databaseConnectionInfo);
+			}
+		});
+		return mitem;
+	}
+
 	public void fileConnectChanged() {
 		pageContxt.firePropertyChange(DatabaseConnectionInfo.DBConnectPro);
 	}
@@ -221,12 +256,10 @@ public class DBConnectDialog extends JDialog {
 		ConnectionInfo connectionInfo = createOrSaveConnectionInfo();
 		if (null != connectionInfo) {
 			this.pageContxt.setConnectionInfo(connectionInfo.getDatabaseConnectionInfo());
-			DatabaseConnectionInfo databaseConnectionInfo = connectionInfo.getDatabaseConnectionInfo();
-			ArrayList<ConnectionInfo> connectionsInfo = new ArrayList<ConnectionInfo>();
-			ConnectionInfo coninfo = new ConnectionInfo();
-			coninfo.setName("default");
-			coninfo.setDatabaseConnectionInfo(databaseConnectionInfo);
-			settingsManager.setConnectionsInfo(connectionsInfo);
+			if (null != ConnectionInfo.getConnectionInfoByName(connectionInfo.getName(), connectionsInfo)) {
+				connectionsInfo.add(connectionInfo);
+				settingsManager.setConnectionsInfo(connectionsInfo);
+			}
 		}
 		dispose();
 	}
@@ -238,12 +271,8 @@ public class DBConnectDialog extends JDialog {
 	public ConnectionInfo createOrSaveConnectionInfo() {
 		if (!validateFields())
 			return null;
-		if (connectionsInfo == null) {
-			connectionsInfo = new ArrayList<ConnectionInfo>();
-		}
 		ConnectionInfo connectionInfo = new ConnectionInfo();
 		initializeConnectionInfoWithGUIFields(connectionInfo);
-		connectionsInfo.add(connectionInfo);
 		return connectionInfo;
 	}
 
@@ -251,7 +280,6 @@ public class DBConnectDialog extends JDialog {
 		if (connectionInfo == null) {
 			connectionInfo = new ConnectionInfo();
 		}
-		connectionInfo.setName("db_default");// name
 
 		DatabaseConnectionInfo databaseConnectionInfo = connectionInfo.getDatabaseConnectionInfo();
 		if (databaseConnectionInfo == null) {
@@ -264,6 +292,8 @@ public class DBConnectDialog extends JDialog {
 		databaseConnectionInfo.setPassword(new String(t_password.getPassword()));
 		databaseConnectionInfo.setSid(t_database.getText().trim());
 		databaseConnectionInfo.setConnectID(DatabaseConnectionInfo.CONNECTID[cb_id.getSelectedIndex()]);
+
+		connectionInfo.setName(databaseConnectionInfo.toString());// name
 	}
 
 	public ConnectionInfo getCurrentConnectionInfo() {
@@ -271,13 +301,14 @@ public class DBConnectDialog extends JDialog {
 		initializeConnectionInfoWithGUIFields(connectionInfo);
 		return connectionInfo;
 	}
+
 	public boolean validateFields() {
 		boolean isValid = true;
 		String message = "";
 
 		String databasePassword = new String(t_password.getPassword());
 
-		 if (isTextEmpty(t_database.getText())) {
+		if (isTextEmpty(t_database.getText())) {
 			isValid = false;
 			message = "Debe ingresar un sid de base de datos";
 			requestFocus(t_database);
@@ -338,7 +369,6 @@ public class DBConnectDialog extends JDialog {
 		return StringHelper.isEmpty(text);
 	}
 
-
 	public void clearFields() {
 		t_ip.setText("");
 		t_port.setText("");
@@ -357,4 +387,23 @@ public class DBConnectDialog extends JDialog {
 		}
 	}
 
+	private static void addPopup(Component component, final JPopupMenu popup) {
+		component.addMouseListener(new MouseAdapter() {
+			public void mousePressed(MouseEvent e) {
+				if (e.isPopupTrigger()) {
+					showMenu(e);
+				}
+			}
+
+			public void mouseReleased(MouseEvent e) {
+				if (e.isPopupTrigger()) {
+					showMenu(e);
+				}
+			}
+
+			private void showMenu(MouseEvent e) {
+				popup.show(e.getComponent(), e.getX(), e.getY());
+			}
+		});
+	}
 }

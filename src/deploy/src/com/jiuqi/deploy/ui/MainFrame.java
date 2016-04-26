@@ -29,6 +29,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.UIManager;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 
@@ -168,7 +169,7 @@ public class MainFrame {
 					dialog.setLocationRelativeTo(frmDna);
 					dialog.setVisible(true);
 				} else {
-					JOptionPane.showMessageDialog(null, "请先连接数据库。", "Error", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(frmDna, "请先连接数据库。", "Error", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		});
@@ -185,7 +186,7 @@ public class MainFrame {
 					dialog.setModal(true);
 					dialog.setVisible(true);
 				} else {
-					JOptionPane.showMessageDialog(null, "请先连接数据库。", "Error", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(frmDna, "请先连接数据库。", "Error", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		});
@@ -202,7 +203,7 @@ public class MainFrame {
 					dialog.setLocationRelativeTo(frmDna);
 					dialog.setVisible(true);
 				} else {
-					JOptionPane.showMessageDialog(null, "请先连接数据库。", "Error", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(frmDna, "请先连接数据库。", "Error", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		});
@@ -812,7 +813,7 @@ public class MainFrame {
 		entity.setLdapEnable(StringHelper.getEnableStr(ck_ldap.isSelected()));
 		entity.setFactoryInitial(t_ldap_factory.getText());
 		entity.setProviderUrl(t_ldap_server.getText());
-		entity.setAuthentication(Contants.LDAP_LOGIN_TYPE[cb_logontype.getSelectedIndex()]);
+		entity.setAuthentication(String.valueOf(cb_logontype.getSelectedItem()));
 		entity.setLdapDomain(t_ldap_domainname.getText());
 		entity.setIncludeEntrys(t_ldap_entryitem.getText());
 		entity.setSetupParam(t_startparam.getText().trim());
@@ -837,36 +838,41 @@ public class MainFrame {
 	}
 
 	private void doSave() {
+		if (null == configService && !initDNAContext(t_context.getText())) {
+			showErrorStatus("保存失败！");
+			JOptionPane.showMessageDialog(frmDna, "保存失败！" + "请先配置DNA上下文路径或DNA上下文路径配置错误！", "错误",
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		if (!IOUtils.workDirIsOk(t_dnaroot.getText())) {
+			int showConfirmDialog = JOptionPane.showConfirmDialog(frmDna,
+					"DNA工作目录在当前机器上不存在或为只读！\nDNA工作目录和应用中间件必须在同一个机器上。\n如果确认工作目录没有问题可以选择【是】。",
+					UIManager.getString("OptionPane.titleText"), JOptionPane.YES_NO_OPTION);
+			if (showConfirmDialog != JOptionPane.YES_OPTION) {
+				return;
+			}
+		}
 		try {
 			save();
-			JOptionPane.showMessageDialog(null, "保存成功！", "提示", JOptionPane.NO_OPTION);
+			JOptionPane.showMessageDialog(frmDna, "保存成功！", "提示", JOptionPane.NO_OPTION);
 			showOkStatus("保存成功！");
-		} catch (SaveException e1) {
+		} catch (SaveException e) {
 			showErrorStatus("保存失败！");
-			JOptionPane.showMessageDialog(null, "保存失败！" + e1.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(frmDna, "保存失败！" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
 		}
+
 	}
 
 	private void save() throws SaveException {
-		// String msg = "保存成功!";
-		if (null == configService) {
-			if (!initDNAContext(t_context.getText())) {
-				throw new SaveException("请先配置DNA上下文路径或DNA上下文路径配置错误！");
-			}
-		}
-		if (IOUtils.workDirIsOk(t_dnaroot.getText())) {
-			ConfigEntity configEntity = getEntity();
-			try {
-				configService.openConnect();
-				configService.storeConfigEntity(configEntity);// 保存dna-server.xml配置信息
-				configService.storeDistConfigEntity(configEntity);
-				configService.closeConnect();
-			} catch (Exception e) {
-				throw new SaveException(e.getMessage());
-			} // 保存distributed.xml配置信息
-		} else {
-			throw new SaveException("DNA工作目录不存在或者为只读！注意DNA工作目录和应用中间件在同一个服务器上。");
-		}
+		ConfigEntity configEntity = getEntity();
+		try {
+			configService.openConnect();
+			configService.storeConfigEntity(configEntity);// 保存dna-server.xml配置信息
+			configService.storeDistConfigEntity(configEntity);
+			configService.closeConnect();
+		} catch (Exception e) {
+			throw new SaveException(e.getMessage());
+		} // 保存distributed.xml配
 	}
 
 	public void shouConnectStatus() {

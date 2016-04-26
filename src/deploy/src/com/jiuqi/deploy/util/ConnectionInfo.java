@@ -8,7 +8,7 @@ import java.util.ArrayList;
  */
 public class ConnectionInfo {
     
-    private String name = null;
+	private String name = null;// Ψһ
     private DatabaseConnectionInfo  databaseConnectionInfo  = null;
 
     public String getName() {
@@ -23,6 +23,7 @@ public class ConnectionInfo {
     public DatabaseConnectionInfo getDatabaseConnectionInfo() {
         return databaseConnectionInfo;
     }
+
 
     public void setDatabaseConnectionInfo(DatabaseConnectionInfo databaseConnectionInfo) {
         this.databaseConnectionInfo = databaseConnectionInfo;
