@@ -28,7 +28,7 @@ public class Monitor implements IMonitor {
 	// private JProgressBar progressBar;
 	private Container panel;
 	private JTextArea textArea;
-
+	private int process;
 	public Monitor(JComponent panel) {
 		this.panel = panel;
 		textArea = new JTextArea();
@@ -65,9 +65,15 @@ public class Monitor implements IMonitor {
 		// progressBar.setValue(process);
 	}
 
+	@Override
+	public void propt(int process, String msg) {
+		process(process);
+		propt("(" + process + "%) " + msg);
+	}
+
 	public void finish() {
 		t_end = System.currentTimeMillis();
-		propt("导出完成......\n\r耗时：" + (t_end - t_start) / 1000 + "秒。");
+		propt("完成......\n\r耗时：" + (t_end - t_start) / 1000 + "秒。");
 		process(100);
 		panel.doLayout();
 	}
@@ -75,7 +81,7 @@ public class Monitor implements IMonitor {
 	public void start() {
 		t_start = System.currentTimeMillis();
 		textArea.setText("");
-		propt("开始导出......");
+		propt("开始......");
 		process(0);
 		// progressBar.setVisible(true);
 		panel.doLayout();
@@ -85,5 +91,7 @@ public class Monitor implements IMonitor {
 	public void error(String error) {
 		appendMessage(error);
 	}
+
+
 
 }

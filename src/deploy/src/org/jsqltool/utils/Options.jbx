@@ -1,0 +1,12 @@
+[PropertyInfo]
+dateFormat,String,false,false, , ,false,<default>
+language,String,false,false, , ,false,<default>
+opt,Options,false,false, , ,false,<default>
+oracleExplainPlanTable,String,false,false, , ,false,<default>
+resourceBundle,ResourceBundle,false,false, , ,false,<default>
+updateWhenNoPK,boolean,false,false, , ,false,<default>
+[IconNames]
+
+
+
+

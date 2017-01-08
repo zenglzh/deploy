@@ -1,0 +1,21 @@
+[PropertyInfo]
+autoCommit,boolean,false,false, , ,true,<default>
+catalog,String,false,false, , ,true,<default>
+className,String,false,false, , ,true,<default>
+dbType,int,false,false, , ,true,<default>
+filters,Hashtable,false,false, , ,false,<default>
+host,String,false,false, , ,true,<default>
+isolationLevel,int,false,false, , ,true,<default>
+name,String,false,false, , ,true,<default>
+oldQueries,ArrayList,false,false, , ,false,<default>
+password,String,false,false, , ,true,<default>
+port,String,false,false, , ,true,<default>
+readOnly,boolean,false,false, , ,true,<default>
+SID,String,false,false, , ,true,<default>
+url,String,false,false, , ,true,<default>
+username,String,false,false, , ,true,<default>
+[IconNames]
+
+
+
+

@@ -10,5 +10,13 @@
 	<classpathentry kind="lib" path="lib/swingx-all-1.6.3.jar"/>
 	<classpathentry kind="lib" path="lib/jdom-2.0.5.jar"/>
 	<classpathentry kind="lib" path="lib/json-lib-2.1-jdk15.jar"/>
+	<classpathentry kind="lib" path="lib/jxl_1.0.0.jar"/>
+	<classpathentry kind="lib" path="lib/commons-io-2.5.jar"/>
+	<classpathentry kind="lib" path="lib/images.jar"/>
+	<classpathentry kind="lib" path="lib/itext-1.4.3.jar"/>
+	<classpathentry kind="lib" path="lib/jcalendar.jar"/>
+	<classpathentry kind="lib" path="lib/jgraph.jar"/>
+	<classpathentry kind="lib" path="lib/poi-2.0-RC2-20040102.jar"/>
+	<classpathentry kind="lib" path="lib/rsyntaxText.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

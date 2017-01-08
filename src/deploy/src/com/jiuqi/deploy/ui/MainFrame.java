@@ -14,6 +14,7 @@ import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -126,7 +127,6 @@ public class MainFrame {
 		frmDna.setLocationRelativeTo(null);
 		JMenuBar menuBar = new JMenuBar();
 		frmDna.setJMenuBar(menuBar);
-
 		JMenu menu_1 = new JMenu("\u5F00\u59CB");
 		menuBar.add(menu_1);
 
@@ -148,6 +148,37 @@ public class MainFrame {
 			}
 		});
 		menu_1.add(mi_save);
+
+		JSeparator separator_4 = new JSeparator();
+		menu_1.add(separator_4);
+
+		JMenuItem mi_expwar = new JMenuItem("\u5BFC\u51FA WAR");
+		mi_expwar.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				WarExportDialog dialog = new WarExportDialog();
+				dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+				dialog.setTitle("µ¼³ö WAR");
+				dialog.setModal(true);
+				dialog.setLocationRelativeTo(frmDna);
+				dialog.setVisible(true);
+			}
+		});
+		
+		JMenuItem mi_dbmonitor = new JMenuItem("\u6570\u636E\u5E93\u76D1\u63A7");
+		mi_dbmonitor.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				ArchiveLogMonitorFrame.launch();
+			}
+		});
+		menu_1.add(mi_dbmonitor);
+		menu_1.add(mi_expwar);
+
+		JSeparator separator_3 = new JSeparator();
+		menu_1.add(separator_3);
 		menu_1.add(mi_exit);
 
 		JMenu menu_2 = new JMenu("\u6570\u636E\u5E93");
@@ -251,6 +282,7 @@ public class MainFrame {
 			public void actionPerformed(ActionEvent e) {
 				AboutDialog aboutDialog = new AboutDialog();
 				aboutDialog.setLocationRelativeTo(frmDna);
+				aboutDialog.setModal(true);
 				aboutDialog.setVisible(true);
 			}
 		});
@@ -764,7 +796,7 @@ public class MainFrame {
 	}
 
 	private void initCheckBox(JCheckBox cbBox, String enableStr) {
-		boolean enabled = Contants.ATTRIBUTE_ENABLE.equals(enableStr);
+		boolean enabled = Contants.ATTRIBUTE_ENABLE.equals(enableStr) || "true".equals(enableStr);
 		if (cbBox.isSelected() != enabled) {
 			cbBox.doClick();
 		}

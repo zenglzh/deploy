@@ -21,44 +21,62 @@ import com.jiuqi.deploy.util.TimeUtils;
  */
 public class ESBDBClient {
 
-    static Logger logger = Logger.getLogger(ESBDBClient.class);
-    
-    public static final int ANY_STATUS = 0; // Incluye que la operacion no se haya ejecutado, aunque sea parte del flujo
-    public static final int ERROR_STATUS = 1;
-    public static final int FAULTED_STATUS = 2;
-    public static final int RESUBMITABLE_STATUS = 3;
-    public static final int OK_STATUS = 4;
-    public static final int NOT_EXECUTED_OPERATION_STATUS = 5;
-    public static final int EXECUTED_OPERATION_STATUS = 6;
+	static Logger logger = Logger.getLogger(ESBDBClient.class);
 
-    private String dbhost;
-    private int dbport;
-    private String database;
-    private String user;
-    private String pass;
+	public static final int ANY_STATUS = 0; // Incluye que la operacion no se
+											// haya ejecutado, aunque sea parte
+											// del flujo
+	public static final int ERROR_STATUS = 1;
+	public static final int FAULTED_STATUS = 2;
+	public static final int RESUBMITABLE_STATUS = 3;
+	public static final int OK_STATUS = 4;
+	public static final int NOT_EXECUTED_OPERATION_STATUS = 5;
+	public static final int EXECUTED_OPERATION_STATUS = 6;
+
+	private String dbhost;
+	private int dbport;
+	private String database;
+	private String user;
+	private String pass;
 	private String logon;// 连接身份
-    private Connection conn = null;
-    private ResultSet rs = null;
-    private PreparedStatement pstmt = null;
+	private String url;
+	private Connection conn = null;
+	private ResultSet rs = null;
+	private PreparedStatement pstmt = null;
 
 	public static String[] CONNECTID = DatabaseConnectionInfo.CONNECTID;
 
 	public ESBDBClient(DatabaseConnectionInfo db) {
-		this(db.getHost(), Integer.parseInt(db.getPort()), db.getSid(), db.getUsername(), db.getPassword(),
-				db.getConnectID());
+		if (db.hasUrl()) {
+			this.url = db.getUrl();
+		} else {
+			this.dbhost = db.getHost();
+			this.dbport = Integer.parseInt(db.getPort());
+			this.database = db.getSid();
+		}
+		this.user = db.getUsername();
+		this.pass = db.getPassword();
+		this.logon = db.getConnectID();
+	}
+
+	public ESBDBClient(String url, String user, String password, String logon) {
+		this.url = url;
+		this.user = user;
+		this.pass = password;
+		this.logon = logon;
 	}
 
 	public ESBDBClient(String dbhost, int dbport, String database, String user, String password, String logon) {
-        this.dbhost = dbhost;
-        this.dbport = dbport;
-        this.database = database;
-        this.user = user;
-        this.pass = password;
+		this.dbhost = dbhost;
+		this.dbport = dbport;
+		this.database = database;
+		this.user = user;
+		this.pass = password;
 		this.logon = logon;
 		// connect();
 		// esbDBClientSQL = new ESBDBClientSQL();
 		// esbDBClientSQL.setConnection(conn);
-    }
+	}
 
 	public void connect() throws SQLException, ClassNotFoundException {
 		Class.forName("oracle.jdbc.driver.OracleDriver");
@@ -68,8 +86,16 @@ public class ESBDBClient {
 		if (isDBALogin()) {
 			conProps.put("internal_logon", "sysdba");
 		}
-		conn = DriverManager.getConnection("jdbc:oracle:thin:@" + dbhost + ":" + dbport + ":" + database, conProps);
-    }
+		conn = DriverManager.getConnection(getUrl(), conProps);
+	}
+
+	public String getUrl() {
+		if (null == url) {
+			return "jdbc:oracle:thin:@" + dbhost + ":" + dbport + ":" + database;
+		} else {
+			return url;
+		}
+	}
 
 	private boolean isDBALogin() {
 		return null != this.logon && CONNECTID[1].equalsIgnoreCase(this.logon);
@@ -78,6 +104,15 @@ public class ESBDBClient {
 	public void testConnect() throws Exception {
 		connect();
 		disconnect();
+	}
+
+	public boolean isValidConnection() {
+		try {
+			testConnect();
+		} catch (Exception e) {
+			return false;
+		}
+		return true;
 	}
 
 	public String getDatabase() {
@@ -89,65 +124,58 @@ public class ESBDBClient {
 	}
 
 	public void disconnect() throws SQLException {
-        conn.close();
-    }
+		if (null != conn) {
+			conn.close();
+		}
+	}
 
-    public String getServiceGUIDByServiceName(String serviceName) throws Exception {
-        logger.debug("getServiceGUIDByServiceName: " + serviceName);
-        String guid = "";
-        String sql = "Select GUID from oraesb.WF_EVENTS where NAME=? and TYPE='GROUP'";
-        logger.debug(sql);
-        pstmt = conn.prepareStatement(sql);
-        pstmt.setString(1, serviceName);
-        rs = pstmt.executeQuery();
-        rs.next();
-        guid = rs.getString("GUID");
-        return guid;
-    }
-    
-    public ArrayList getOperationsGUIDsForService(String serviceGUID) throws SQLException {
-        logger.debug("getOperationsGUIDsForService: " + serviceGUID);
-        ArrayList<String> operationGUIDs = new ArrayList<String>();
-        String sql = "select GUID from oraesb.WF_EVENTS where owner_guid=?";
-        logger.debug(sql);
-        pstmt = conn.prepareStatement(sql);
-        pstmt.setString(1, serviceGUID);
-        rs = pstmt.executeQuery();
-        while(rs.next()) {
-            operationGUIDs.add(rs.getString("GUID"));
-        }
-        return operationGUIDs;
-    }
+	public String getServiceGUIDByServiceName(String serviceName) throws Exception {
+		logger.debug("getServiceGUIDByServiceName: " + serviceName);
+		String guid = "";
+		String sql = "Select GUID from oraesb.WF_EVENTS where NAME=? and TYPE='GROUP'";
+		logger.debug(sql);
+		pstmt = conn.prepareStatement(sql);
+		pstmt.setString(1, serviceName);
+		rs = pstmt.executeQuery();
+		rs.next();
+		guid = rs.getString("GUID");
+		return guid;
+	}
 
-    public int getInstanceCount(String serviceName, String startDate, String endDate) throws Exception {
-        logger.debug("getInstanceCount: " + serviceName + ", " + startDate + ", " + endDate);
-        int count = 0;
-        long sd = TimeUtils.getTime(startDate);
-        long ed = TimeUtils.getTime(endDate);
-        String guid = getServiceGUIDByServiceName(serviceName);
-        String sql =
-                "SELECT COUNT(*) AS COUNT FROM (SELECT FLOW_ID, MIN(TIMESTAMP) FROM (" + "\n" +
-                "SELECT FLOW_ID, TIMESTAMP " + "\n" +
-                "FROM oraesb.ESB_ACTIVITY B " + "\n" +
-                "WHERE TIMESTAMP>=? " + "\n" +
-                "AND TIMESTAMP<=? " + "\n" +
-                "AND (( SOURCE IN (?) OR OPERATION_GUID IN (?))) " + "\n" +
-                "AND IS_STALE IS NULL " + "\n" +
-                "ORDER BY TIMESTAMP DESC" + "\n" +
-                ") " + "\n" +
-                "GROUP BY FLOW_ID " + "\n" +
-                "ORDER BY MIN(TIMESTAMP) DESC)";
-        logger.debug(sql);
-        pstmt = conn.prepareStatement(sql);
-        pstmt.setLong(1, sd);
-        pstmt.setLong(2, ed);
-        pstmt.setString(3, guid);
-        pstmt.setString(4, guid);
-        rs = pstmt.executeQuery();
-        rs.next();
-        count = rs.getInt("COUNT");
-        return count;
-    }
+	public List<String> getOperationsGUIDsForService(String serviceGUID) throws SQLException {
+		logger.debug("getOperationsGUIDsForService: " + serviceGUID);
+		List<String> operationGUIDs = new ArrayList<String>();
+		String sql = "select GUID from oraesb.WF_EVENTS where owner_guid=?";
+		logger.debug(sql);
+		pstmt = conn.prepareStatement(sql);
+		pstmt.setString(1, serviceGUID);
+		rs = pstmt.executeQuery();
+		while (rs.next()) {
+			operationGUIDs.add(rs.getString("GUID"));
+		}
+		return operationGUIDs;
+	}
+
+	public int getInstanceCount(String serviceName, String startDate, String endDate) throws Exception {
+		logger.debug("getInstanceCount: " + serviceName + ", " + startDate + ", " + endDate);
+		int count = 0;
+		long sd = TimeUtils.getTime(startDate);
+		long ed = TimeUtils.getTime(endDate);
+		String guid = getServiceGUIDByServiceName(serviceName);
+		String sql = "SELECT COUNT(*) AS COUNT FROM (SELECT FLOW_ID, MIN(TIMESTAMP) FROM (" + "\n" + "SELECT FLOW_ID, TIMESTAMP " + "\n" + "FROM oraesb.ESB_ACTIVITY B " + "\n" + "WHERE TIMESTAMP>=? "
+				+ "\n" + "AND TIMESTAMP<=? " + "\n" + "AND (( SOURCE IN (?) OR OPERATION_GUID IN (?))) " + "\n" + "AND IS_STALE IS NULL " + "\n" + "ORDER BY TIMESTAMP DESC" + "\n" + ") " + "\n"
+				+ "GROUP BY FLOW_ID " + "\n" + "ORDER BY MIN(TIMESTAMP) DESC)";
+		logger.debug(sql);
+		pstmt = conn.prepareStatement(sql);
+		pstmt.setLong(1, sd);
+		pstmt.setLong(2, ed);
+		pstmt.setString(3, guid);
+		pstmt.setString(4, guid);
+		rs = pstmt.executeQuery();
+		rs.next();
+		count = rs.getInt("COUNT");
+		return count;
+	}
 
 	public void createTablespace(OracleTablespaceProperties properties) throws SQLException, ClassNotFoundException {
 		String buildSQL = properties.buildSQL();
@@ -177,7 +205,6 @@ public class ESBDBClient {
 		disconnect();
 		return userInfos;
 	}
-
 
 	public void createUser(UserProperties properties) throws SQLException, ClassNotFoundException {
 		connect();
@@ -230,14 +257,12 @@ public class ESBDBClient {
 		while (rs.next()) {
 			String name = rs.getString("name");
 			TablespaceInfo tInfo = new TablespaceInfo();
-			tInfo.setName( name);
+			tInfo.setName(name);
 			tablespaces.add(tInfo);
 		}
 		stmt.close();
 		disconnect();
 		return tablespaces;
 	}
-
-
 
 }

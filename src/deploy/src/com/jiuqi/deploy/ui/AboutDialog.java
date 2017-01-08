@@ -23,7 +23,7 @@ public class AboutDialog extends JDialog {
 
 	private static final long serialVersionUID = 1L;
 	private final JPanel contentPanel = new JPanel();
-	private final static String ABOUTMSG = "DAN war包部署工具\n版本1.0\n\n本软件由北京久其软件股份有限公司大数据交付中心提供\nCopyright (c) JIUQI. All rights reserved";
+	private final static String ABOUTMSG = "DAN war包部署工具\n版本1.1\n\n本软件由北京久其软件股份有限公司大数据交付中心提供\nCopyright (c) JIUQI. All rights reserved";
 
 	/**
 	 * Launch the application.

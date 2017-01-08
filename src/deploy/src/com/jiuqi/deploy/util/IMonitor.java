@@ -22,6 +22,8 @@ public interface IMonitor {
 	
 	public void propt(String msg);
 
+	public void propt(int process, String msg);
+
 	public void error(String error);
 
 	public void finish();

@@ -7,7 +7,7 @@ import javax.swing.ImageIcon;
 
 public class ImageRes {
 
-	public static final String PLUGIN_PATH = "/com/jiuqi/deploy";
+	public static final String PLUGIN_PATH = "/resource";
 
 	public static final String ICO_DEPLAY = "/images/deplay.ico";
 	public static final String PNG_CLOSE = "/images/close.png";
@@ -20,7 +20,9 @@ public class ImageRes {
 	public static final String PNG_EXPORT = "/images/export.png";
 	public static final String PNG_IMPORT = "/images/import.png";
 	public static final String PNG_USER = "/images/user.png";
+	public static final String PNG_WAR = "/images/war.png";
 	public static final String PNG_TABLESPACE = "/images/tablespace.png";
+	public static final String PNG_EXECUTE = "/images/execute.gif";
 
 	static public Image getImage(String imagename) {
 		return Toolkit.getDefaultToolkit().getImage(ImageRes.class.getResource(PLUGIN_PATH + imagename));

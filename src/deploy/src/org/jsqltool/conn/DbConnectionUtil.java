@@ -1,0 +1,973 @@
+package org.jsqltool.conn;
+
+import java.io.OutputStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Vector;
+
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+
+import org.jsqltool.gui.ProgressDialog;
+import org.jsqltool.model.CustomTableModel;
+import org.jsqltool.utils.Options;
+
+/**
+ * <p>
+ * Title: JSqlTool Project
+ * </p>
+ * <p>
+ * Description: Utility Class used to connect to the database and fetch data.
+ * </p>
+ * <p>
+ * Copyright: Copyright (C) 2006 Mauro Carniel
+ * </p>
+ *
+ * <p>
+ * This file is part of JSqlTool project. This library is free software; you can
+ * redistribute it and/or modify it under the terms of the (LGPL) Lesser General
+ * Public License as published by the Free Software Foundation;
+ *
+ * GNU LESSER GENERAL PUBLIC LICENSE Version 2.1, February 1999
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Library General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Library General Public License
+ * along with this library; if not, write to the Free Software Foundation, Inc.,
+ * 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * The author may be contacted at: maurocarniel@tin.it
+ * </p>
+ *
+ * @author Mauro Carniel
+ * @version 1.0
+ */
+public class DbConnectionUtil {
+
+	/** database connection */
+	private Connection conn = null;
+
+	/** database connection descriptor */
+	private DbConnection c = null;
+
+	/** isolation levels */
+	private int[] isolationLivels = new int[] { Connection.TRANSACTION_NONE, // 0
+			Connection.TRANSACTION_READ_COMMITTED, // 2
+			Connection.TRANSACTION_READ_UNCOMMITTED, // 1
+			Connection.TRANSACTION_REPEATABLE_READ, // 4
+			Connection.TRANSACTION_SERIALIZABLE // 8
+	};
+
+	/** MDI frame; this reference is used on JDialog creation */
+	private JFrame parent = null;
+
+	/** flag used to create the connection */
+	private boolean createConn = true;
+
+	/**
+	 * Create a database connection.
+	 * 
+	 * @param c
+	 *            databse connection descriptor
+	 */
+	public DbConnectionUtil(JFrame parent, DbConnection c) {
+		this.parent = parent;
+		this.c = c;
+	}
+
+	/**
+	 * @return database connection
+	 */
+	public Connection getConn() {
+		try {
+			if (!createConn)
+				return conn;
+			createConn = false;
+
+			ProgressDialog.getInstance().startProgress();
+
+			Class.forName(c.getClassName());
+			this.conn = DriverManager.getConnection(c.getUrl(),
+					c.getUsername(), c.getPassword());
+			this.conn.setAutoCommit(c.isAutoCommit());
+			this.conn.setTransactionIsolation(isolationLivels[c
+					.getIsolationLevel()]);
+			this.conn.setReadOnly(c.isReadOnly());
+		} catch (Throwable ex) {
+			JOptionPane.showMessageDialog(
+					parent,
+					Options.getInstance().getResource(
+							"error when creating connection")
+							+ ":\n" + ex.getMessage(), Options.getInstance()
+							.getResource("error"), JOptionPane.ERROR_MESSAGE);
+			throw new RuntimeException(ex.getMessage());
+		} finally {
+			ProgressDialog.getInstance().stopProgress();
+		}
+		return conn;
+	}
+
+	public void saveProfile(boolean isEdit) {
+		new ConnectionProfile().saveProfile(parent, c, isEdit);
+	}
+
+	/**
+	 * @return tables list, filtered by schema
+	 */
+	public synchronized List getTables(String schema, String tableType) {
+		ArrayList list = new ArrayList();
+		ResultSet rset = null;
+		try {
+			rset = getConn().getMetaData().getTables(
+					null, // schema.length()==0?null:schema.toUpperCase(),
+					schema.length() == 0 ? null : schema.toUpperCase(), null,
+					new String[] { tableType });
+
+			// ResultSet rset =
+			// conn.getMetaData().getTables(schema.toUpperCase(),schema.toUpperCase(),null,new
+			// String[]{tableType});
+			/*
+			 * Retrieves a description of the tables available in the given
+			 * catalog. Only table descriptions matching the catalog, schema,
+			 * table name and type criteria are returned. They are ordered by
+			 * TABLE_TYPE, TABLE_SCHEM and TABLE_NAME. Each table description
+			 * has the following columns: TABLE_CAT String => table catalog (may
+			 * be null) TABLE_SCHEM String => table schema (may be null)
+			 * TABLE_NAME String => table name TABLE_TYPE String => table type.
+			 * Typical types are "TABLE", "VIEW", "SYSTEM TABLE",
+			 * "GLOBAL TEMPORARY", "LOCAL TEMPORARY", "ALIAS", "SYNONYM".
+			 * REMARKS String => explanatory comment on the table TYPE_CAT
+			 * String => the types catalog (may be null) TYPE_SCHEM String =>
+			 * the types schema (may be null) TYPE_NAME String => type name (may
+			 * be null) SELF_REFERENCING_COL_NAME String => name of the
+			 * designated "identifier" column of a typed table (may be null)
+			 * REF_GENERATION String => specifies how values in
+			 * SELF_REFERENCING_COL_NAME are created. Values are "SYSTEM",
+			 * "USER", "DERIVED". (may be null) Note: Some databases may not
+			 * return information for all tables. Parameters: catalog - a
+			 * catalog name; must match the catalog name as it is stored in the
+			 * database; "" retrieves those without a catalog; null means that
+			 * the catalog name should not be used to narrow the search
+			 * schemaPattern - a schema name pattern; must match the schema name
+			 * as it is stored in the database; "" retrieves those without a
+			 * schema; null means that the schema name should not be used to
+			 * narrow the search tableNamePattern - a table name pattern; must
+			 * match the table name as it is stored in the database types - a
+			 * list of table types to include; null returns all types
+			 */
+			while (rset.next())
+				try {
+					// list.add((schema.length()>0?schema.toUpperCase()+".":"")+rset.getString(3));
+					list.add(rset.getString(3));
+				} catch (SQLException ex1) {
+					ex1.printStackTrace();
+				}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(
+					parent,
+					Options.getInstance().getResource(
+							"error during tables fetching")
+							+ ":\n" + ex.getMessage(), Options.getInstance()
+							.getResource("error"), JOptionPane.ERROR_MESSAGE);
+		} finally {
+			try {
+				Statement stmt = rset == null ? null : rset.getStatement();
+				try {
+					rset.close();
+				} catch (Exception ex3) {
+				}
+				try {
+					stmt.close();
+				} catch (Exception ex4) {
+				}
+			} catch (Exception ex2) {
+			}
+		}
+		return list;
+	}
+
+	/**
+	 * @return catalogs list
+	 */
+	public synchronized List getSchemas() {
+		ArrayList list = new ArrayList();
+		ResultSet rset = null;
+		try {
+			/*
+			 * HashSet h = new HashSet(); ResultSet rset =
+			 * conn.getMetaData().getTables(schema,null,null,new
+			 * String[]{"TABLE"}); while(rset.next()) h.add(rset.getString(2));
+			 * rset.close(); list.addAll(h); if (list.size()==0)
+			 * list.add(c.getCatalog());
+			 */
+			// ResultSet rset = getConn().getMetaData().getCatalogs();
+			rset = getConn().getMetaData().getSchemas();
+			while (rset.next())
+				list.add(rset.getString(1));
+		} catch (Exception ex) {
+			if (ex.getMessage().indexOf(
+					"Caratteristica opzionale non implementata") == -1)
+				ex.printStackTrace();
+			// JOptionPane.showMessageDialog(
+			// parent,
+			// Options.getInstance().getResource("error during catalogs fetching")+":\n"+ex.getMessage(),
+			// Options.getInstance().getResource("error"),
+			// JOptionPane.ERROR_MESSAGE
+			// );
+		} finally {
+			try {
+				Statement stmt = rset == null ? null : rset.getStatement();
+				try {
+					rset.close();
+				} catch (Exception ex3) {
+				}
+				try {
+					stmt.close();
+				} catch (Exception ex4) {
+				}
+			} catch (Exception ex1) {
+			}
+		}
+		return list;
+	}
+
+	/**
+	 * @param query
+	 *            query to execute
+	 * @return table model which contains a block of records
+	 */
+	public synchronized TableModel getQuery(String query, Vector parameters) {
+		return getQuery(query, parameters, 0, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * @param tableName
+	 *            table name
+	 * @return table columns
+	 */
+	public synchronized TableModel getTableColumns(String tableName) {
+		CustomTableModel model = new CustomTableModel(new String[] {
+				Options.getInstance().getResource("column"),
+				Options.getInstance().getResource("data type"),
+				Options.getInstance().getResource("pk"),
+				Options.getInstance().getResource("null?"),
+				Options.getInstance().getResource("default") }, new Class[] {
+				String.class, String.class, Integer.class, Boolean.class,
+				String.class });
+		try {
+			Hashtable pk = new Hashtable();
+			String tName = tableName;
+			String schema = null;
+			if (tName.indexOf(".") > -1) {
+				schema = tName.substring(0, tName.indexOf("."));
+				tName = tName.substring(tName.indexOf(".") + 1);
+			}
+			ResultSet rset0 = null;
+			try {
+				rset0 = getConn().getMetaData().getPrimaryKeys(null, schema,
+						tName.toString());
+				while (rset0.next()) {
+					pk.put(rset0.getString(4), rset0.getString(5));
+				}
+			} catch (SQLException ex1) {
+				// JOptionPane.showMessageDialog(parent,"Error while fetching PKs:\n"+ex1.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+				if (ex1.getMessage().indexOf(
+						"Driver does not support this function") == -1)
+					ex1.printStackTrace();
+			} finally {
+				try {
+					Statement stmt = rset0 == null ? null : rset0
+							.getStatement();
+					try {
+						rset0.close();
+					} catch (Exception ex3) {
+					}
+					try {
+						stmt.close();
+					} catch (Exception ex4) {
+					}
+				} catch (Exception ex1) {
+				}
+			}
+
+			Hashtable defaults = new Hashtable();
+			ResultSet rset1 = null;
+			try {
+				rset1 = getConn().getMetaData().getColumns(null, schema, tName,
+						null);
+				String colValue = null;
+				String colName = null;
+				while (rset1.next()) {
+					try {
+						colName = rset1.getString(4);
+						colValue = rset1.getString(13);
+						if (colValue != null) {
+							defaults.put(colName, colValue);
+						}
+					} catch (SQLException ex2) {
+					}
+				}
+			} catch (SQLException ex1) {
+				// JOptionPane.showMessageDialog(parent,"Error while fetching PKs:\n"+ex1.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+				if (ex1.getMessage().indexOf(
+						"Driver does not support this function") == -1)
+					ex1.printStackTrace();
+			} finally {
+				try {
+					Statement stmt = rset1 == null ? null : rset1
+							.getStatement();
+					try {
+						rset1.close();
+					} catch (Exception ex3) {
+					}
+					try {
+						stmt.close();
+					} catch (Exception ex4) {
+					}
+				} catch (Exception ex1) {
+				}
+			}
+
+			ResultSet rset = null;
+			try {
+				rset = getConn().createStatement().executeQuery(
+						"select * from " + tableName);
+				Vector data = new Vector();
+
+				String type = null;
+				for (int i = 0; i < rset.getMetaData().getColumnCount(); i++) {
+					Vector row = new Vector();
+					row.add(rset.getMetaData().getColumnName(i + 1));
+					type = rset.getMetaData().getColumnTypeName(i + 1);
+					if ((rset.getMetaData().getColumnType(i + 1) == Types.VARCHAR
+							|| rset.getMetaData().getColumnType(i + 1) == Types.LONGVARCHAR || rset
+							.getMetaData().getColumnType(i + 1) == Types.CHAR)
+							&& rset.getMetaData().getPrecision(i + 1) == 0) // case
+																			// MySQL...
+						type += "("
+								+ rset.getMetaData()
+										.getColumnDisplaySize(i + 1) + ")";
+					else if (rset.getMetaData().getColumnType(i + 1) == Types.BIGINT
+							|| rset.getMetaData().getColumnType(i + 1) == Types.CHAR
+							|| rset.getMetaData().getColumnType(i + 1) == Types.INTEGER
+							|| rset.getMetaData().getColumnType(i + 1) == Types.LONGVARBINARY
+							|| rset.getMetaData().getColumnType(i + 1) == Types.NUMERIC
+							&& rset.getMetaData().getPrecision(i + 1) > 0
+							&& rset.getMetaData().getScale(i + 1) == 0
+							|| rset.getMetaData().getColumnType(i + 1) == Types.SMALLINT
+							|| rset.getMetaData().getColumnType(i + 1) == Types.VARCHAR
+							|| rset.getMetaData().getColumnType(i + 1) == Types.LONGVARCHAR)
+						type += "(" + rset.getMetaData().getPrecision(i + 1)
+								+ ")";
+					else if (rset.getMetaData().getColumnType(i + 1) == Types.DECIMAL
+							|| rset.getMetaData().getColumnType(i + 1) == Types.DOUBLE
+							|| rset.getMetaData().getColumnType(i + 1) == Types.FLOAT
+							|| rset.getMetaData().getColumnType(i + 1) == Types.NUMERIC
+							&& rset.getMetaData().getPrecision(i + 1) > 0
+							|| rset.getMetaData().getColumnType(i + 1) == Types.REAL)
+						type += "(" + rset.getMetaData().getPrecision(i + 1)
+								+ "," + rset.getMetaData().getScale(i + 1)
+								+ ")";
+					row.add(type);
+					row.add(pk.containsKey(rset.getMetaData().getColumnName(
+							i + 1)) ? new Integer(pk
+							.get(rset.getMetaData().getColumnName(i + 1))
+							.toString().trim()) : null);
+					row.add(new Boolean(
+							rset.getMetaData().isNullable(i + 1) == ResultSetMetaData.columnNullable));
+					row.add(defaults.get(rset.getMetaData()
+							.getColumnName(i + 1)));
+					data.add(row);
+				}
+				model.setDataVector(data);
+				return model;
+			} catch (Exception ex1) {
+				// JOptionPane.showMessageDialog(parent,"Error while fetching PKs:\n"+ex1.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+				if (ex1.getMessage().indexOf(
+						"Driver does not support this function") == -1)
+					ex1.printStackTrace();
+			} finally {
+				try {
+					Statement stmt = rset == null ? null : rset.getStatement();
+					try {
+						rset.close();
+					} catch (Exception ex3) {
+					}
+					try {
+						stmt.close();
+					} catch (Exception ex4) {
+					}
+				} catch (Exception ex1) {
+				}
+			}
+		} catch (Exception ex) {
+			JOptionPane.showMessageDialog(parent, Options.getInstance()
+					.getResource("error while fetching columns info")
+					+ ":\n"
+					+ ex.getMessage(),
+					Options.getInstance().getResource("error"),
+					JOptionPane.ERROR_MESSAGE);
+			ex.printStackTrace();
+		}
+		return model;
+	}
+
+	/**
+	 * @param tableName
+	 *            table name used to retrieve its pk
+	 * @return collection of links (pk field name,table model column index)
+	 */
+	public synchronized Hashtable getPK(String tableName) {
+		Hashtable pk = new Hashtable();
+		ResultSet rset0 = null;
+		ResultSet rset = null;
+		try {
+			String tName = tableName;
+			if (tName.indexOf(".") > -1)
+				tName = tName.substring(tName.indexOf(".") + 1);
+			rset0 = getConn().getMetaData().getPrimaryKeys(null, null,
+					tName.toString());
+			while (rset0.next())
+				pk.put(rset0.getString(4), rset0.getString(5));
+			rset = getConn().createStatement().executeQuery(
+					"select * from " + tableName + " where 1=0");
+			Vector data = new Vector();
+
+			String type = null;
+			for (int i = 0; i < rset.getMetaData().getColumnCount(); i++) {
+				if (pk.containsKey(rset.getMetaData().getColumnName(i + 1)))
+					pk.put(rset.getMetaData().getColumnName(i + 1),
+							new Integer(i));
+			}
+		} catch (Exception ex) {
+			if (ex.getMessage()
+					.indexOf("Driver does not support this function") == -1)
+				ex.printStackTrace();
+			// JOptionPane.showMessageDialog(parent,"Error while fetching pk keys:\n"+ex.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+		} finally {
+			try {
+				Statement stmt = rset0 == null ? null : rset0.getStatement();
+				try {
+					rset0.close();
+				} catch (Exception ex3) {
+				}
+				try {
+					stmt.close();
+				} catch (Exception ex4) {
+				}
+
+			} catch (Exception ex1) {
+			}
+			try {
+				Statement stmt = rset == null ? null : rset.getStatement();
+				try {
+					rset.close();
+				} catch (Exception ex3) {
+				}
+				try {
+					stmt.close();
+				} catch (Exception ex4) {
+				}
+			} catch (Exception ex1) {
+			}
+		}
+
+		return pk;
+	}
+
+	/**
+	 * @param tableName
+	 *            table name used to retrieve its indexes
+	 * @return table indexes
+	 */
+	public synchronized TableModel getTableIndexes(String tableName) {
+		ResultSet rset = null;
+		try {
+			String schema = null;
+			if (tableName.indexOf(".") != -1) {
+				schema = tableName.substring(0, tableName.indexOf("."));
+				tableName = tableName.substring(tableName.indexOf(".") + 1);
+			}
+			rset = this.getConn().getMetaData()
+					.getIndexInfo(null, schema, tableName, false, true);
+			/*
+			 * TABLE_CAT String => table catalog (may be null) TABLE_SCHEM
+			 * String => table schema (may be null) TABLE_NAME String => table
+			 * name NON_UNIQUE boolean => Can index values be non-unique. false
+			 * when TYPE is tableIndexStatistic INDEX_QUALIFIER String => index
+			 * catalog (may be null); null when TYPE is tableIndexStatistic
+			 * INDEX_NAME String => index name; null when TYPE is
+			 * tableIndexStatistic TYPE short => index type: tableIndexStatistic
+			 * - this identifies table statistics that are returned in
+			 * conjuction with a table's index descriptions tableIndexClustered
+			 * - this is a clustered index tableIndexHashed - this is a hashed
+			 * index tableIndexOther - this is some other style of index
+			 * ORDINAL_POSITION short => column sequence number within index;
+			 * zero when TYPE is tableIndexStatistic COLUMN_NAME String =>
+			 * column name; null when TYPE is tableIndexStatistic ASC_OR_DESC
+			 * String => column sort sequence, "A" => ascending, "D" =>
+			 * descending, may be null if sort sequence is not supported; null
+			 * when TYPE is tableIndexStatistic CARDINALITY int => When TYPE is
+			 * tableIndexStatistic, then this is the number of rows in the
+			 * table; otherwise, it is the number of unique values in the index.
+			 * PAGES int => When TYPE is tableIndexStatisic then this is the
+			 * number of pages used for the table, otherwise it is the number of
+			 * pages used for the current index. FILTER_CONDITION String =>
+			 * Filter condition, if any. (may be null)
+			 */
+			int num = rset.getMetaData().getColumnCount();
+			String[] colNames = new String[num];
+			Class[] classNames = new Class[num];
+			int[] typeNames = new int[num];
+			for (int i = 0; i < num; i++) {
+				try {
+					colNames[i] = rset.getMetaData().getColumnName(i + 1);
+					classNames[i] = Class.forName(getColumnClassName(rset,
+							i + 1));
+					typeNames[i] = rset.getMetaData().getColumnType(i + 1);
+				} catch (Exception ex) {
+				} catch (Error er) {
+				}
+			}
+			CustomTableModel model = new CustomTableModel(colNames, classNames,
+					typeNames);
+			Object[] row = null;
+			while (rset.next()) {
+				row = new Object[num];
+				for (int i = 0; i < num; i++)
+					row[i] = rset.getObject(i + 1);
+				model.addRow(row);
+			}
+			return model;
+		} catch (Exception ex) {
+			if (ex.getMessage()
+					.indexOf("Driver does not support this function") == -1)
+				ex.printStackTrace();
+			// JOptionPane.showMessageDialog(parent,"Error while fetching pk keys:\n"+ex.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+		} finally {
+			try {
+				Statement stmt = rset == null ? null : rset.getStatement();
+				try {
+					rset.close();
+				} catch (Exception ex3) {
+				}
+				try {
+					stmt.close();
+				} catch (Exception ex4) {
+				}
+			} catch (Exception ex1) {
+			}
+		}
+		return new DefaultTableModel(0, 3);
+	}
+
+	/**
+	 * @param tableName
+	 *            table name used to retrieve its fk
+	 * @return table fks
+	 */
+	public synchronized TableModel getCrossReference(String tableName) {
+		ResultSet rset = null;
+		try {
+			String schema = null;
+			if (tableName.indexOf(".") != -1) {
+				schema = tableName.substring(0, tableName.indexOf("."));
+				tableName = tableName.substring(tableName.indexOf(".") + 1);
+			}
+			rset = this
+					.getConn()
+					.getMetaData()
+					.getCrossReference(null, schema, null, null, schema,
+							tableName);
+			/*
+			 * PKTABLE_CAT String => primary key table catalog (may be null)
+			 * PKTABLE_SCHEM String => primary key table schema (may be null)
+			 * PKTABLE_NAME String => primary key table name PKCOLUMN_NAME
+			 * String => primary key column name FKTABLE_CAT String => foreign
+			 * key table catalog (may be null) being exported (may be null)
+			 * FKTABLE_SCHEM String => foreign key table schema (may be null)
+			 * being exported (may be null) FKTABLE_NAME String => foreign key
+			 * table name being exported FKCOLUMN_NAME String => foreign key
+			 * column name being exported KEY_SEQ short => sequence number
+			 * within foreign key UPDATE_RULE short => What happens to foreign
+			 * key when primary is updated: importedNoAction - do not allow
+			 * update of primary key if it has been imported importedKeyCascade
+			 * - change imported key to agree with primary key update
+			 * importedKeySetNull - change imported key to NULL if its primary
+			 * key has been updated importedKeySetDefault - change imported key
+			 * to default values if its primary key has been updated
+			 * importedKeyRestrict - same as importedKeyNoAction (for ODBC 2.x
+			 * compatibility) DELETE_RULE short => What happens to the foreign
+			 * key when primary is deleted. importedKeyNoAction - do not allow
+			 * delete of primary key if it has been imported importedKeyCascade
+			 * - delete rows that import a deleted key importedKeySetNull -
+			 * change imported key to NULL if its primary key has been deleted
+			 * importedKeyRestrict - same as importedKeyNoAction (for ODBC 2.x
+			 * compatibility) importedKeySetDefault - change imported key to
+			 * default if its primary key has been deleted FK_NAME String =>
+			 * foreign key name (may be null) PK_NAME String => primary key name
+			 * (may be null) DEFERRABILITY short => can the evaluation of
+			 * foreign key constraints be deferred until commit
+			 * importedKeyInitiallyDeferred - see SQL92 for definition
+			 * importedKeyInitiallyImmediate - see SQL92 for definition
+			 * importedKeyNotDeferrable - see SQL92 for definition
+			 */
+			int num = rset.getMetaData().getColumnCount();
+			String[] colNames = new String[num];
+			Class[] classNames = new Class[num];
+			int[] typeNames = new int[num];
+			for (int i = 0; i < num; i++) {
+				try {
+					colNames[i] = rset.getMetaData().getColumnName(i + 1);
+					classNames[i] = Class.forName(getColumnClassName(rset,
+							i + 1));
+					typeNames[i] = rset.getMetaData().getColumnType(i + 1);
+				} catch (Exception ex) {
+				} catch (Error er) {
+				}
+			}
+			CustomTableModel model = new CustomTableModel(colNames, classNames,
+					typeNames);
+			Object[] row = null;
+			while (rset.next()) {
+				row = new Object[num];
+				for (int i = 0; i < num; i++)
+					row[i] = rset.getObject(i + 1);
+				model.addRow(row);
+			}
+			return model;
+		} catch (Exception ex) {
+			if (ex.getMessage()
+					.indexOf("Driver does not support this function") == -1)
+				ex.printStackTrace();
+			// JOptionPane.showMessageDialog(parent,"Error while fetching pk keys:\n"+ex.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+		} finally {
+			try {
+				Statement stmt = rset == null ? null : rset.getStatement();
+				try {
+					rset.close();
+				} catch (Exception ex3) {
+				}
+				try {
+					stmt.close();
+				} catch (Exception ex4) {
+				}
+			} catch (Exception ex1) {
+			}
+		}
+
+		return new DefaultTableModel(0, 3);
+	}
+
+	/**
+	 * @param query
+	 *            query to execute
+	 * @param startPos
+	 *            first record to read
+	 * @param maxRows
+	 *            max number of records to read
+	 * @return table model which contains the records
+	 */
+	public synchronized TableModel getQuery(String query, Vector parameters,
+			int startPos, int maxRows) {
+		Statement stmt = null;
+		ResultSet rset = null;
+		try {
+			if (parameters.size() == 0) {
+				stmt = getConn().createStatement();
+				rset = stmt.executeQuery(query);
+			} else {
+				stmt = getConn().prepareStatement(query);
+				for (int i = 0; i < parameters.size(); i++)
+					((PreparedStatement) stmt).setObject(i + 1,
+							parameters.get(i));
+				rset = ((PreparedStatement) stmt).executeQuery();
+			}
+			Vector data = new Vector();
+			String className = null;
+			String[] colNames = new String[rset.getMetaData().getColumnCount()];
+			Class[] classTypes = new Class[rset.getMetaData().getColumnCount()];
+			int[] colSizes = new int[rset.getMetaData().getColumnCount()];
+			for (int i = 0; i < rset.getMetaData().getColumnCount(); i++) {
+				boolean isBlob = false;
+				colNames[i] = rset.getMetaData().getColumnName(i + 1);
+				try {
+					className = getColumnClassName(rset, i + 1);
+					if (className == null)
+						className = "java.lang.String";
+					else if (className.equals("byte[]")
+							|| className.equals("oracle.sql.BLOB")) {
+						className = "java.sql.Blob";
+						isBlob = true;
+					}
+					classTypes[i] = Class.forName(className);
+				} catch (NullPointerException ex) {
+					classTypes[i] = String.class;
+				}
+				try {
+					if (isBlob)
+						colSizes[i] = 150;
+					else
+						colSizes[i] = Math.min(
+								(rset.getMetaData().getPrecision(i + 1) == 0 ? // case
+																				// MySQL...
+								Math.max(rset.getMetaData()
+										.getColumnDisplaySize(i + 1) * 10,
+										colNames[i].length() * 10) : Math
+										.max(rset.getMetaData().getPrecision(
+												i + 1) * 10,
+												colNames[i].length() * 10)),
+								Math.max(200, colNames[i].length() * 10));
+				} catch (SQLException ex1) {
+					colSizes[i] = colNames[i].length() * 10;
+				}
+			}
+			CustomTableModel model = new CustomTableModel(colNames, classTypes,
+					colSizes);
+			int j = 0;
+			if (startPos > 0)
+				while (rset.next() && j < startPos)
+					j++;
+			j = 0;
+			Vector row = null;
+			while (rset.next() && j < maxRows) {
+				row = new Vector();
+				for (int i = 0; i < rset.getMetaData().getColumnCount(); i++)
+					try {
+						row.add(rset.getObject(i + 1));
+					} catch (Throwable ex) {
+						row.add(null);
+						ex.printStackTrace();
+					}
+				j++;
+				data.add(row);
+				// model.addRow(row);
+			}
+			model.setDataVector(data);
+			model.setEditMode(c.isReadOnly() ? model.DETAIL_REC
+					: model.EDIT_REC);
+			return model;
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(
+					parent,
+					Options.getInstance().getResource(
+							"error while executing query")
+							+ ":\n" + ex.getMessage(), Options.getInstance()
+							.getResource("error"), JOptionPane.ERROR_MESSAGE);
+		} finally {
+			try {
+				rset.close();
+			} catch (Exception ex2) {
+			}
+			try {
+				stmt.close();
+			} catch (Exception ex3) {
+			}
+		}
+		return new CustomTableModel(new String[0], new Class[0], new int[0]);
+	}
+
+	/**
+	 * @param query
+	 *            query to execute
+	 * @param maxRows
+	 *            max number of records to read
+	 * @return result set index of the first record of the last block
+	 */
+	public synchronized int getLastQueryIndex(String query, Vector parameters,
+			int maxRows) {
+		ResultSet rset = null;
+		Statement stmt = null;
+		try {
+			if (parameters.size() == 0) {
+				stmt = getConn().createStatement(
+						ResultSet.TYPE_SCROLL_SENSITIVE,
+						ResultSet.CONCUR_READ_ONLY);
+			} else {
+				stmt = getConn().prepareStatement(query);
+				for (int i = 0; i < parameters.size(); i++)
+					((PreparedStatement) stmt).setObject(i + 1,
+							parameters.get(i));
+			}
+			rset = stmt.executeQuery(query);
+			int j = 0;
+			rset.last();
+			j = rset.getRow();
+			j = j - maxRows;
+			if (j < 0)
+				j = 0;
+			return j;
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(
+					parent,
+					Options.getInstance().getResource(
+							"error while executing query")
+							+ ":\n" + ex.getMessage(), Options.getInstance()
+							.getResource("error"), JOptionPane.ERROR_MESSAGE);
+		} finally {
+			try {
+				rset.close();
+			} catch (Exception ex1) {
+			}
+			try {
+				stmt.close();
+			} catch (Exception ex2) {
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * Execute a SQL Script.
+	 * 
+	 * @param stmt
+	 *            SQL statement to execute
+	 * @return number of rows updated
+	 */
+	public synchronized int executeStmt(String stmt, Vector parameters) {
+		Statement pstmt = null;
+		try {
+			if (parameters.size() == 0) {
+				pstmt = getConn().createStatement();
+			} else {
+				pstmt = getConn().prepareStatement(stmt);
+				for (int i = 0; i < parameters.size(); i++)
+					((PreparedStatement) pstmt).setObject(i + 1,
+							parameters.get(i));
+			}
+
+			return pstmt.executeUpdate(stmt);
+		} catch (SQLException ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(parent, Options.getInstance()
+					.getResource("error while executing statement")
+					+ ":\n"
+					+ ex.getMessage(),
+					Options.getInstance().getResource("error"),
+					JOptionPane.ERROR_MESSAGE);
+			System.out.println(stmt);
+			return 0;
+		} finally {
+			try {
+				pstmt.close();
+			} catch (Exception ex1) {
+			}
+		}
+	}
+
+	/*
+	 * public void createGraph(GraphFrame gf) { try { String q =
+	 * "select table_name from all_tables"; ResultSet rset =
+	 * conn.createStatement().executeQuery(q); while(rset.next())
+	 * gf.addNode(rset.getString(1)); rset.close(); q =
+	 * "select s.table_name,d.table_name from all_constraints s,all_constraints d "
+	 * +
+	 * " where s.r_constraint_name=d.constraint_name and s.constraint_type='R' "
+	 * ; rset = conn.createStatement().executeQuery(q); while(rset.next()) { //
+	 * gf.addNode(rset.getString(1)); // gf.addNode(rset.getString(2));
+	 * gf.addEdge(rset.getString(1),rset.getString(2),20); } rset.close(); }
+	 * catch (SQLException ex) { JOptionPane.showMessageDialog(new
+	 * JFrame(),"Error while executing statement:\n"
+	 * +ex.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+	 * ex.printStackTrace(); } }
+	 */
+
+	public DbConnection getDbConnection() {
+		return c;
+	}
+
+	public String convertDateToString(java.util.Date date) {
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		if (c.getDbType() == c.ORACLE_TYPE)
+			return "TO_DATE('" + cal.get(cal.DAY_OF_MONTH) + "-"
+					+ cal.get(cal.MONTH) + "-" + cal.get(cal.YEAR) + " "
+					+ cal.get(cal.HOUR_OF_DAY) + ":" + cal.get(cal.MINUTE)
+					+ ":" + cal.get(cal.SECOND) + "','dd-mm-yyyy HH:MMM:SS')";
+		else if (c.getDbType() == c.SQLSERVER_TYPE)
+			return "SELECT CAST('" + cal.get(cal.DAY_OF_MONTH) + "-"
+					+ cal.get(cal.MONTH) + "-" + cal.get(cal.YEAR) + " "
+					+ cal.get(cal.HOUR_OF_DAY) + ":" + cal.get(cal.MINUTE)
+					+ ":" + cal.get(cal.SECOND) + "' AS datetime)";
+		else
+			return "'" + cal.get(cal.YEAR) + "-" + cal.get(cal.MONTH) + "-"
+					+ cal.get(cal.DAY_OF_MONTH) + "'";
+	}
+
+	/**
+	 * Some JDBC Drivers don't support JDBC method: in that case java class type
+	 * is derived by java.sql.Types
+	 */
+	private String getColumnClassName(ResultSet rset, int colIndex) {
+		try {
+			return rset.getMetaData().getColumnClassName(colIndex);
+		} catch (SQLException ex) {
+			try {
+				int colType = rset.getMetaData().getColumnType(colIndex);
+				if (colType == Types.BIGINT || colType == Types.INTEGER
+						|| colType == Types.SMALLINT
+						|| colType == Types.TINYINT)
+					return "java.lang.Integer";
+				if (colType == Types.BINARY || colType == Types.BLOB
+						|| colType == Types.LONGVARBINARY)
+					return "java.sql.Blob";
+				if (colType == Types.BIT || colType == Types.BOOLEAN)
+					return "java.lang.Boolean";
+				if (colType == Types.CLOB)
+					return "java.sql.Clob";
+				if (colType == Types.DATE || colType == Types.TIME
+						|| colType == Types.TIMESTAMP)
+					return "java.sql.Timestamp";
+				if (colType == Types.DECIMAL || colType == Types.DOUBLE
+						|| colType == Types.FLOAT || colType == Types.NUMERIC
+						|| colType == Types.REAL)
+					return "java.math.BigDecimal";
+			} catch (SQLException ex1) {
+			}
+			return "java.lang.String";
+		}
+	}
+
+	/**
+	 * Store a byte[] a BLOB field.
+	 * 
+	 * @param bytes
+	 *            byte[] to store
+	 * @param stmt
+	 *            statement whose first element is a BLOB field
+	 */
+	public final void writeBlob(byte[] bytes, PreparedStatement stmt)
+			throws Exception {
+		if (getDbConnection().getDbType() == DbConnection.ORACLE_TYPE) {
+			oracle.sql.BLOB blob = oracle.sql.BLOB.getDBAccess(conn)
+					.createTemporaryBlob(conn, true, bytes.length);
+			OutputStream out = blob.getBinaryOutputStream();
+			out.write(bytes);
+			out.flush();
+			out.close();
+			stmt.setBlob(1, blob);
+		} else {
+			throw new RuntimeException(Options.getInstance().getResource(
+					"database type not supported for blob type."));
+		}
+	}
+
+}

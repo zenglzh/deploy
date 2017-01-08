@@ -1,0 +1,11 @@
+[PropertyInfo]
+name,String,false,false,name,name,true,<default>
+sourceDatabase,String,false,false,sourgeDatabase,sourgeDatabase,true,<default>
+destDatabase,String,false,false,destDatabase,destDatabase,true,<default>
+tablesList,java.util.ArrayList,false,false,tablesList,tablesList,true,<default>
+recreateTablesContent,boolean,false,false,recreateTablesContent,recreateTablesContent,true,<default>
+[IconNames]
+
+
+
+

@@ -220,4 +220,18 @@ public class JDBCUtil {
         }
 		return list;
 	}
+	
+	public static double getDbOneFieldSize(Connection conn,String sql){
+		//πÈµµ»’÷æ
+        try {
+        	PreparedStatement pstmt  = conn.prepareStatement(sql);
+        	ResultSet rs = pstmt.executeQuery();
+	        if(rs.next()){
+				return rs.getDouble(1);
+	        }
+        }catch (SQLException e) {
+        	e.printStackTrace();
+        }
+       	return 0f;
+	}
 }
