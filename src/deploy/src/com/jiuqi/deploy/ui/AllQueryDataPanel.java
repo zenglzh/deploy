@@ -8,8 +8,6 @@ import java.awt.event.MouseEvent;
 import java.sql.SQLSyntaxErrorException;
 import java.util.List;
 import java.util.Vector;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -26,9 +24,10 @@ import org.jsqltool.utils.Options;
 
 import com.jiuqi.deploy.db.ArchiveMonitorDBInfo;
 import com.jiuqi.deploy.db.DBTools;
+import com.jiuqi.deploy.exe.BlockTable;
 import com.jiuqi.deploy.exe.ConsumerQueue;
 import com.jiuqi.deploy.exe.ProducerQueue;
-import com.jiuqi.deploy.intf.IProduct;
+import com.jiuqi.deploy.util.IMonitor;
 
 public class AllQueryDataPanel extends JPanel {
 
@@ -38,7 +37,7 @@ public class AllQueryDataPanel extends JPanel {
 	private Table table;
 	private JScrollPane scrollPane;
 	private String query = null;
-	private Vector parameters = new Vector();
+	private Vector<Object> parameters = new Vector<Object>();
 	/**
 	 * table model column index, related to the current sorted column; -1 = no
 	 * sorted column
@@ -51,13 +50,15 @@ public class AllQueryDataPanel extends JPanel {
 
 	/** current first row in block */
 	private int inc = 0;
+	private IMonitor monitor;
 
 	/**
 	 * Create the panel.
 	 */
-	public AllQueryDataPanel(List<ArchiveMonitorDBInfo> monitorDBInfos, TableModelListener tableModelListener) {
+	public AllQueryDataPanel(List<ArchiveMonitorDBInfo> monitorDBInfos, TableModelListener tableModelListener, IMonitor monitor) {
 		this.monitorDBInfos = monitorDBInfos;
 		this.tableModelListener = tableModelListener;
+		this.monitor = monitor;
 		jbInit();
 		init();
 	}
@@ -99,12 +100,12 @@ public class AllQueryDataPanel extends JPanel {
 		return table;
 	}
 
-	public void setQuery(String query, Vector parameters) throws SQLSyntaxErrorException {
+	public void query(String query, Vector<Object> parameters) {
 		this.query = query;
 		this.parameters = parameters;
 		this.sortColIndex = -1;
 		this.originalQuery = null;
-		setQuery();
+		buildTable();
 	}
 
 	public void setQuery() throws SQLSyntaxErrorException {
@@ -140,12 +141,14 @@ public class AllQueryDataPanel extends JPanel {
 	}
 
 	private void buildTable() {
-		BlockingQueue<IProduct> publicBoxQueue = new LinkedBlockingQueue(40);
+		table.getModel().removeTableModelListener(tableModelListener);
+		table.removeAll();
+		BlockTable btable = new BlockTable();
 		for (ArchiveMonitorDBInfo dbInfo : monitorDBInfos) {
-			Thread pro = new Thread(new ProducerQueue(publicBoxQueue, dbInfo, query, parameters));
+			ProducerQueue pro = new ProducerQueue(btable, dbInfo, query, parameters, monitor);
 			pro.start();
 		}
-		Thread con = new Thread(new ConsumerQueue(publicBoxQueue));
+		Thread con = new Thread(new ConsumerQueue(btable, table));
 		con.start();
 
 	}

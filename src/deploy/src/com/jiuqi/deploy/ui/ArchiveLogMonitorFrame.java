@@ -385,13 +385,13 @@ public class ArchiveLogMonitorFrame {
 			public boolean accept(ArchiveMonitorDBInfo dbinfo) {
 				boolean isEmpty = StringHelper.isEmpty(dbinfo.getProvinceCode().trim());
 				if (!isEmpty) {
-					DatabaseConnectionInfo connect = getConnect(dbinfo);
-					if (!isDBValid(connect)) {
-						invalidCodes.append(dbinfo.getProvinceCode()).append(",");
-						dbinfo.setValid(false);
-					} else {
-						dbinfo.setValid(true);
-					}
+					/*
+					 * DatabaseConnectionInfo connect = getConnect(dbinfo); if
+					 * (!isDBValid(connect)) {
+					 * invalidCodes.append(dbinfo.getProvinceCode
+					 * ()).append(","); dbinfo.setValid(false); } else {
+					 * dbinfo.setValid(true); }
+					 */
 				}
 				return !isEmpty;
 			}

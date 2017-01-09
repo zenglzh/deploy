@@ -126,6 +126,7 @@ public class ESBDBClient {
 	public void disconnect() throws SQLException {
 		if (null != conn) {
 			conn.close();
+			conn = null;
 		}
 	}
 

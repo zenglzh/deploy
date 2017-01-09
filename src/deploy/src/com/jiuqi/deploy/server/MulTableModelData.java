@@ -10,7 +10,7 @@ import org.jsqltool.model.CustomTableModel;
 public class MulTableModelData {
 
 	private List<String> colNames;
-	private List<Class> classTypes;
+	private List<Class<?>> classTypes;
 	private List<Integer> colSizes;
 	private Vector<Vector<Object>> data;
 	private SQLSyntaxErrorException exception;
@@ -18,7 +18,7 @@ public class MulTableModelData {
 
 	public MulTableModelData() {
 		colNames = new ArrayList<String>();
-		classTypes = new ArrayList<Class>();
+		classTypes = new ArrayList<Class<?>>();
 		colSizes = new ArrayList<Integer>();
 		data = new Vector<Vector<Object>>();
 	}
@@ -31,7 +31,7 @@ public class MulTableModelData {
 		return colNames;
 	}
 
-	public List<Class> getClassTypes() {
+	public List<Class<?>> getClassTypes() {
 		return classTypes;
 	}
 

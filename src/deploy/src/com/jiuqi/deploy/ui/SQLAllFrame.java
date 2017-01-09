@@ -5,7 +5,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.sql.SQLSyntaxErrorException;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -30,6 +29,8 @@ import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.FormSpecs;
 import com.jgoodies.forms.layout.RowSpec;
 import com.jiuqi.deploy.db.ArchiveMonitorDBInfo;
+import com.jiuqi.deploy.exe.QueryMonitor;
+import com.jiuqi.deploy.util.IMonitor;
 import com.jiuqi.deploy.util.ImageRes;
 import com.jiuqi.deploy.util.ShowMessage;
 
@@ -43,6 +44,7 @@ public class SQLAllFrame extends JFrame implements TableModelListener {
 	private List<ArchiveMonitorDBInfo> monitorDBInfos;
 	private String lastSQL = null;
 	private JLabel statusLabel;
+	private IMonitor monitor;
 
 	/**
 	 * Create the dialog.
@@ -81,7 +83,8 @@ public class SQLAllFrame extends JFrame implements TableModelListener {
 		editor.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_SQL);
 		editor.setCodeFoldingEnabled(true);
 		splitPane.add(editor, JSplitPane.TOP);
-		this.dataPanel = new AllQueryDataPanel(monitorDBInfos, this);// this
+		monitor = new QueryMonitor(showMessage);
+		this.dataPanel = new AllQueryDataPanel(monitorDBInfos, this, monitor);// this
 		splitPane.add(dataPanel, JSplitPane.BOTTOM);
 		splitPane.setDividerLocation(150);
 
@@ -121,20 +124,14 @@ public class SQLAllFrame extends JFrame implements TableModelListener {
 
 	private void executeSQL(String sql) {
 		String newsql = parseRows(sql);
-
 		// parse sql to find out parameters...
-		Vector values = new Vector();
-		executeSQLWithValues(newsql, values);
+		executeSQLWithValues(newsql, new Vector<Object>());
 	}
 
 	public final void executeSQLWithValues(String newsql, Vector values) {
 		if (newsql.trim().toUpperCase().startsWith("SELECT ")) {
 			long time = System.currentTimeMillis();
-			try {
-				dataPanel.setQuery(newsql, values);
-			} catch (SQLSyntaxErrorException e) {
-				showErrorStatus("SQL ”Ô∑®¥ÌŒÛ: " + e.getMessage());
-			}
+			dataPanel.query(newsql, values);
 			dataPanel.getTable().setShowGrid(true);
 			if (dataPanel.getTableModel() instanceof CustomTableModel) {
 				((CustomTableModel) dataPanel.getTableModel()).setEditMode(CustomTableModel.DETAIL_REC);

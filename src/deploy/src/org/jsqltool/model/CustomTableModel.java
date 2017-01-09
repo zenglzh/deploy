@@ -40,6 +40,7 @@ import javax.swing.table.DefaultTableModel;
  */
 public class CustomTableModel extends DefaultTableModel {
 
+	private static final long serialVersionUID = 1L;
 	public static final int DETAIL_REC = 0;
 	public static final int INSERT_REC = 1;
 	public static final int EDIT_REC = 2;
@@ -47,15 +48,15 @@ public class CustomTableModel extends DefaultTableModel {
 	private int editMode = DETAIL_REC;
 	private int insertRowIndex = -1;
 	private boolean[] editableCols = null;
-	private Vector colNames = new Vector();
-	private Class[] colTypes = null;
+	private Vector<Object> colNames = new Vector<Object>();
+	private Class<?>[] colTypes = null;
 	private int[] colSizes = null;
 
-	public CustomTableModel(String[] colNames, Class[] colTypes) {
+	public CustomTableModel(String[] colNames, Class<?>[] colTypes) {
 		this(colNames, colTypes, null);
 	}
 
-	public CustomTableModel(List<String> colNames, List<Class> colTypes, List<Integer> colSizes) {
+	public CustomTableModel(List<String> colNames, List<Class<?>> colTypes, List<Integer> colSizes) {
 		this(colNames.toArray(new String[colNames.size()]), colTypes.toArray(new Class[colTypes.size()]), getColsize(colSizes));
 
 	}
@@ -69,7 +70,7 @@ public class CustomTableModel extends DefaultTableModel {
 		return a;
 	}
 
-	public CustomTableModel(String[] colNames, Class[] colTypes, int[] colSizes) {
+	public CustomTableModel(String[] colNames, Class<?>[] colTypes, int[] colSizes) {
 		super(colNames, 0);
 		for (int i = 0; i < colNames.length; i++) {
 			this.colNames.add(colNames[i]);
@@ -83,14 +84,14 @@ public class CustomTableModel extends DefaultTableModel {
 		this.colSizes = colSizes;
 	}
 
-	public void addColumn(Object columnName, Vector columnData, Class colType) {
+	public void addColumn(Object columnName, Vector<Object> columnData, Class<?> colType) {
 		this.addColumn(columnName, columnData, colType, columnName.toString().length() * 10);
 	}
 
-	public void addColumn(Object columnName, Vector columnData, Class colType, int colSize) {
+	public void addColumn(Object columnName, Vector<Object> columnData, Class<?> colType, int colSize) {
 		super.addColumn(columnName, columnData);
 
-		Class[] newColTypes = new Class[colTypes.length + 1];
+		Class<?>[] newColTypes = new Class[colTypes.length + 1];
 		System.arraycopy(colTypes, 0, newColTypes, 0, colTypes.length);
 		newColTypes[colTypes.length] = colType;
 		colTypes = newColTypes;
@@ -109,7 +110,13 @@ public class CustomTableModel extends DefaultTableModel {
 		super.insertRow(index, rowData);
 	}
 
-	public Class getColumnClass(int col) {
+	public void modify(int row, Vector<Object> rowData) {
+		for (int i = 0; i < getColumnCount(); i++) {
+			setValueAt(rowData.get(i), row, i);
+		}
+	}
+
+	public Class<?> getColumnClass(int col) {
 		return colTypes[col].equals(java.sql.Blob.class) ? String.class : colTypes[col];
 	}
 
