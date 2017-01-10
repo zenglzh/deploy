@@ -47,7 +47,6 @@ public class ArchiveLogTableModel extends AbstractTableModel {
 		for (int i = 0; i < getColumnCount(); i++) {
 			fireTableCellUpdated(rowNum, i);
 		}
-
 	}
 
 	public List<ArchiveLogEntry> getAll() {
@@ -60,27 +59,25 @@ public class ArchiveLogTableModel extends AbstractTableModel {
 	public int getRowCount() {
 		return datas.size();
 	}
-	
+
 	@Override
 	public String getColumnName(int col) {
 		return HEAD[col];
 	}
-	
+
 	@Override
 	public int getColumnCount() {
 		return HEAD.length;
 	}
 
-
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
 		if (rowIndex < getRowCount() && columnIndex < getColumnCount()) {
 			ArchiveLogEntry archiveLogEntry = datas.get(rowIndex);
-			return archiveLogEntry.getFieldValue(rowIndex,columnIndex);
+			return archiveLogEntry.getFieldValue(rowIndex, columnIndex);
 		}
 		return null;
 	}
-
 
 	public Class getColumnClass(int c) {
 		Object valueAt = getValueAt(0, c);

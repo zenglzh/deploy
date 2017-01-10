@@ -73,7 +73,14 @@ public class MulTableModelData {
 		this.exception = exception;
 	}
 
-	public void buildTableModel() {
+	public CustomTableModel buildTableModel() {
 		this.model = new CustomTableModel(getColNames(), getClassTypes(), getColSizes());
+		model.setDataVector(getData());
+		model.setEditMode(CustomTableModel.DETAIL_REC);
+		return model;
+	}
+
+	public CustomTableModel getModel() {
+		return model;
 	}
 }

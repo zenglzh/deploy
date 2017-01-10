@@ -25,8 +25,8 @@ import org.jsqltool.utils.Options;
 import com.jiuqi.deploy.db.ArchiveMonitorDBInfo;
 import com.jiuqi.deploy.db.DBTools;
 import com.jiuqi.deploy.exe.BlockTable;
-import com.jiuqi.deploy.exe.ConsumerQueue;
-import com.jiuqi.deploy.exe.ProducerQueue;
+import com.jiuqi.deploy.exe.QueryResultConsumerQueue;
+import com.jiuqi.deploy.exe.QueryResultProducerQueue;
 import com.jiuqi.deploy.util.IMonitor;
 
 public class AllQueryDataPanel extends JPanel {
@@ -145,10 +145,10 @@ public class AllQueryDataPanel extends JPanel {
 		table.removeAll();
 		BlockTable btable = new BlockTable();
 		for (ArchiveMonitorDBInfo dbInfo : monitorDBInfos) {
-			ProducerQueue pro = new ProducerQueue(btable, dbInfo, query, parameters, monitor);
+			QueryResultProducerQueue pro = new QueryResultProducerQueue(btable, dbInfo, query, parameters, monitor);
 			pro.start();
 		}
-		Thread con = new Thread(new ConsumerQueue(btable, table));
+		Thread con = new Thread(new QueryResultConsumerQueue(btable, table));
 		con.start();
 
 	}

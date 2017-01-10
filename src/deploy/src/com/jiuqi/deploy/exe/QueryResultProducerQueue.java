@@ -15,7 +15,7 @@ import com.jiuqi.deploy.server.TableBody;
 import com.jiuqi.deploy.server.TableHeader;
 import com.jiuqi.deploy.util.IMonitor;
 
-public class ProducerQueue extends Thread {
+public class QueryResultProducerQueue extends Thread {
 
 	private BlockTable bTable;
 	private ArchiveMonitorDBInfo dbInfo;
@@ -24,7 +24,7 @@ public class ProducerQueue extends Thread {
 	private ESBDBClient dbClient;
 	private IMonitor monitor;
 
-	public ProducerQueue(BlockTable bTable, ArchiveMonitorDBInfo dbInfo, String query, Vector<Object> parameters, IMonitor monitor) {
+	public QueryResultProducerQueue(BlockTable bTable, ArchiveMonitorDBInfo dbInfo, String query, Vector<Object> parameters, IMonitor monitor) {
 		this.bTable = bTable;
 		this.dbInfo = dbInfo;
 		this.query = query;

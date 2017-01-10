@@ -15,21 +15,23 @@ import javax.swing.event.TableModelListener;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableModel;
 
-import org.jsqltool.conn.DbConnection;
 import org.jsqltool.gui.graphics.DateCellEditor;
 import org.jsqltool.gui.graphics.DateCellRenderer;
 import org.jsqltool.gui.panel.Table;
 import org.jsqltool.model.CustomTableModel;
 import org.jsqltool.utils.Options;
 
+import com.jiuqi.deploy.db.DBTools;
+import com.jiuqi.deploy.db.ESBDBClient;
+
 public class QueryDataPanel extends JPanel {
 
 	private static final long serialVersionUID = 1L;
 	private TableModelListener tableModelListener;
-	private DbConnection connection;
+	private ESBDBClient dbClient;
 	private Table table;
 	private JScrollPane scrollPane;
-	private String query = null;
+	private String querySQL = null;
 	private Vector parameters = new Vector();
 	/**
 	 * table model column index, related to the current sorted column; -1 = no
@@ -47,8 +49,8 @@ public class QueryDataPanel extends JPanel {
 	/**
 	 * Create the panel.
 	 */
-	public QueryDataPanel(DbConnection connection, TableModelListener tableModelListener) {
-		this.connection = connection;
+	public QueryDataPanel(ESBDBClient dbClient, TableModelListener tableModelListener) {
+		this.dbClient = dbClient;
 		this.tableModelListener = tableModelListener;
 		jbInit();
 		init();
@@ -58,7 +60,7 @@ public class QueryDataPanel extends JPanel {
 		MouseAdapter listMouseListener = new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
 				try {
-					if (query != null) {
+					if (querySQL != null) {
 					}
 				} catch (Exception ex) {
 				}
@@ -92,7 +94,7 @@ public class QueryDataPanel extends JPanel {
 	}
 
 	public void setQuery(String query, Vector parameters) throws SQLSyntaxErrorException {
-		this.query = query;
+		this.querySQL = query;
 		this.parameters = parameters;
 		this.sortColIndex = -1;
 		this.originalQuery = null;
@@ -105,12 +107,11 @@ public class QueryDataPanel extends JPanel {
 	}
 
 	private void readBlock() throws SQLSyntaxErrorException {
-		if (query == null)
+		if (querySQL == null)
 			return;
 		updateSortIcons();
 		table.getModel().removeTableModelListener(tableModelListener);
-		TableModel tableModel = null;// DBTools.queryAll(monitorDBInfos, query,
-										// parameters);
+		TableModel tableModel = DBTools.queryData(dbClient, querySQL, parameters);
 		if (null != tableModel) {
 			table.setModel(tableModel);
 			try {

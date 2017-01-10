@@ -17,11 +17,6 @@ public class TableBody implements IProduct {
 		this.row = row;
 	}
 
-	@Override
-	public boolean hasHeader() {
-		return false;
-	}
-
 	public void setRow(Vector<Object> row) {
 		this.row = row;
 	}

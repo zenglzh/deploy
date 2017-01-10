@@ -126,65 +126,47 @@ public class DBTools {
 		pst.execute();
 	}
 
-	public static TableModel queryAll2(List<ArchiveMonitorDBInfo> monitorDBInfos, String query, Vector parameters) throws SQLSyntaxErrorException {
-		if (null != monitorDBInfos && !monitorDBInfos.isEmpty()) {
-			MulTableModelData head = new MulTableModelData();
-			for (ArchiveMonitorDBInfo dbinfos : monitorDBInfos) {
-				if (!dbinfos.isValid())
-					continue;
-				DatabaseConnectionInfo connectInfo = dbinfos.getConnect();
-				ESBDBClient dbClient = new ESBDBClient(connectInfo);
-				ResultSet rset = null;
-				Statement stmt = null;
-				try {
-					dbClient.connect();
-					if (null == parameters || parameters.isEmpty()) {
-						stmt = dbClient.getConn().createStatement();
-						rset = stmt.executeQuery(query);
-					} else {
-						stmt = dbClient.getConn().prepareStatement(query);
-						for (int i = 0; i < parameters.size(); i++) {
-							((PreparedStatement) stmt).setObject(i + 1, parameters.get(i));
-						}
-						rset = ((PreparedStatement) stmt).executeQuery();
-					}
-					int cols = rset.getMetaData().getColumnCount() + 1;
-					if (!head.inited()) {
-						buildHeadData(head, rset, cols);
-					}
-					buildBodyData(head, dbinfos, rset);
-				} catch (SQLSyntaxErrorException e) {
-					throw e;
-				} catch (ClassNotFoundException e) {
-					e.printStackTrace();
-					break;
-				} catch (SQLException e) {
-					e.printStackTrace();
-				} catch (Exception e) {
-					e.printStackTrace();
-				} finally {
-					try {
-						if (null != rset) {
-							rset.close();
-						}
-						if (null != stmt) {
-							stmt.close();
-						}
-						dbClient.disconnect();
-					} catch (SQLException e) {
-						e.printStackTrace();
-					}
+	public static TableModel queryData(ESBDBClient dbClient, String query, Vector parameters) throws SQLSyntaxErrorException {
+		MulTableModelData head = new MulTableModelData();
+		ResultSet rset = null;
+		Statement stmt = null;
+		try {
+			dbClient.connect();
+			if (null == parameters || parameters.isEmpty()) {
+				stmt = dbClient.getConn().createStatement();
+				rset = stmt.executeQuery(query);
+			} else {
+				stmt = dbClient.getConn().prepareStatement(query);
+				for (int i = 0; i < parameters.size(); i++) {
+					((PreparedStatement) stmt).setObject(i + 1, parameters.get(i));
 				}
+				rset = ((PreparedStatement) stmt).executeQuery();
 			}
-			if (head.inited()) {
-				CustomTableModel model = new CustomTableModel(head.getColNames(), head.getClassTypes(), head.getColSizes());
-				model.setDataVector(head.getData());
-				model.setEditMode(CustomTableModel.DETAIL_REC);
-				return model;
+			int cols = rset.getMetaData().getColumnCount() + 1;
+			buildHeadData(head, rset, cols);
+			buildBodyData(head, rset);
+		} catch (SQLSyntaxErrorException e) {
+			throw e;
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (null != rset) {
+					rset.close();
+				}
+				if (null != stmt) {
+					stmt.close();
+				}
+				dbClient.disconnect();
+			} catch (SQLException e) {
+				e.printStackTrace();
 			}
-
 		}
-		return new DefaultTableModel();
+		return head.buildTableModel();
 	}
 
 	public static TableModel queryAll(List<ArchiveMonitorDBInfo> monitorDBInfos, String query, Vector parameters) throws SQLSyntaxErrorException {
@@ -210,9 +192,7 @@ public class DBTools {
 						rset = ((PreparedStatement) stmt).executeQuery();
 					}
 					int cols = rset.getMetaData().getColumnCount() + 1;
-					if (!head.inited()) {
-						buildHeadData(head, rset, cols);
-					}
+					buildHeadData(head, rset, cols);
 					buildBodyData(head, dbinfos, rset);
 				} catch (SQLSyntaxErrorException e) {
 					throw e;
@@ -237,15 +217,25 @@ public class DBTools {
 					}
 				}
 			}
-			if (head.inited()) {
-				CustomTableModel model = new CustomTableModel(head.getColNames(), head.getClassTypes(), head.getColSizes());
-				model.setDataVector(head.getData());
-				model.setEditMode(CustomTableModel.DETAIL_REC);
-				return model;
-			}
-
 		}
 		return new DefaultTableModel();
+	}
+
+	private static void buildBodyData(MulTableModelData head, ResultSet rset) throws SQLException {
+		int j = 0;
+		while (rset.next() && j < 100) {
+			Vector<Object> row = new Vector<Object>();
+			row.add(j + 1);
+			for (int i = 0; i < rset.getMetaData().getColumnCount(); i++)
+				try {
+					row.add(rset.getObject(i + 1));
+				} catch (Throwable ex) {
+					row.add(null);
+					ex.printStackTrace();
+				}
+			head.appendRow(row);
+			j++;
+		}
 	}
 
 	private static void buildBodyData(MulTableModelData head, ArchiveMonitorDBInfo dbinfos, ResultSet rset) throws SQLException {
@@ -266,7 +256,9 @@ public class DBTools {
 	}
 
 	private static void buildHeadData(MulTableModelData head, ResultSet rset, int cols) throws SQLException {
-		head.append("CODE", String.class, 100);
+		head.append(" ");
+		head.append(25);
+		head.append(Integer.class);
 		String className = null;
 		for (int i = 0; i < cols - 1; i++) {
 			boolean isBlob = false;
@@ -286,7 +278,6 @@ public class DBTools {
 				forName = String.class;
 			}
 			head.append(forName);
-
 			try {
 				if (isBlob) {
 					head.append(150);
@@ -300,6 +291,7 @@ public class DBTools {
 				head.append(colName.length() * 10);
 			}
 		}
+		head.buildTableModel();
 	}
 
 	private static ResultSet query(Connection conn, ResultSet rset, Statement stmt, String query, Vector parameters) {

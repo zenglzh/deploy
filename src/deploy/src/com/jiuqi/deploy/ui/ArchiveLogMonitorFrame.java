@@ -46,12 +46,15 @@ import com.jiuqi.deploy.db.ArchiveMonitorDBInfo;
 import com.jiuqi.deploy.db.Constant;
 import com.jiuqi.deploy.db.ESBDBClient;
 import com.jiuqi.deploy.db.JDBCUtil;
-import com.jiuqi.deploy.exe.ConnectPipe;
-import com.jiuqi.deploy.exe.DBArchiveThread;
+import com.jiuqi.deploy.exe.DBConnectTable;
+import com.jiuqi.deploy.exe.DBInfoConsumerQueue;
+import com.jiuqi.deploy.exe.DBInfoProducerQueue;
+import com.jiuqi.deploy.exe.QueryMonitor;
 import com.jiuqi.deploy.server.ArchiveLogEntry;
 import com.jiuqi.deploy.server.ArchiveLogEntry.CONNECT;
 import com.jiuqi.deploy.util.ConnectionInfo;
 import com.jiuqi.deploy.util.DatabaseConnectionInfo;
+import com.jiuqi.deploy.util.IMonitor;
 import com.jiuqi.deploy.util.ShowMessage;
 import com.jiuqi.deploy.util.StringHelper;
 
@@ -196,7 +199,7 @@ public class ArchiveLogMonitorFrame {
 		l_status.setFont(new Font("ËÎÌו", Font.PLAIN, 12));
 		panel.add(l_status);
 		showMessage = new ShowMessage(l_status);
-
+		monitor = new QueryMonitor(showMessage);
 		JPanel panel_1 = new JPanel();
 		FlowLayout flowLayout_1 = (FlowLayout) panel_1.getLayout();
 		flowLayout_1.setAlignment(FlowLayout.LEFT);
@@ -276,8 +279,8 @@ public class ArchiveLogMonitorFrame {
 		l_refreshTime.setHorizontalAlignment(SwingConstants.LEFT);
 		panel_1.add(l_refreshTime);
 
-		this.tableWrapper = new ArchiveLogTableWrapper();
-		JTable table = tableWrapper.getTable();
+		JTable table = new JTable();
+		this.tableWrapper = new ArchiveLogTableWrapper(table);
 
 		JScrollPane scrollPane = new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
@@ -467,7 +470,7 @@ public class ArchiveLogMonitorFrame {
 		}
 	}
 
-	private void refresh() {
+	private void refresh2() {
 		if (null == monitorDBInfos) {
 			connecte();
 		}
@@ -481,30 +484,21 @@ public class ArchiveLogMonitorFrame {
 		}
 	}
 
-	private void refresh2() {
+	private IMonitor monitor;
 
-	}
-
-	private List<ArchiveLogEntry> query3() {
-		List<ArchiveLogEntry> logentrylist = new ArrayList<ArchiveLogEntry>();
-		for (int i = 0; i < monitorDBInfos.size(); i++) {
-			ArchiveMonitorDBInfo dbInfo = monitorDBInfos.get(i);
-			ArchiveLogEntry entry = new ArchiveLogEntry();
-			entry.setPcode(dbInfo.getProvinceCode());
-			entry.setUrl(dbInfo.getUrl());
-			entry.setDataSource(dbInfo.getDataSourceName());
-			entry.setDbInitSize(dbInfo.getDbInitSize());
-			entry.setArchiveInitSize(dbInfo.getArchiveInitSize());
-			entry.setUser(dbInfo.getUserName());
-			entry.setPwd(dbInfo.getPassword());
-			entry.setLogon(DatabaseConnectionInfo.CONNECTID[0]);
-			ConnectPipe pipe = new ConnectPipe(i, entry, tableWrapper);
-			DBArchiveThread thread = new DBArchiveThread(pipe);
-			Thread ct = new Thread(thread);
-			ct.start();
-			logentrylist.add(entry);
+	private void refresh() {
+		if (null == monitorDBInfos) {
+			connecte();
 		}
-		return logentrylist;
+		DBConnectTable connectTable = new DBConnectTable();
+		for (ArchiveMonitorDBInfo dbInfo : monitorDBInfos) {
+			DBInfoProducerQueue thread = new DBInfoProducerQueue(connectTable, dbInfo, monitor);
+			thread.start();
+		}
+		connectTable.buildMode();
+		Thread thread = new Thread(new DBInfoConsumerQueue(connectTable, tableWrapper));
+		thread.start();
+
 	}
 
 	private List<ArchiveLogEntry> query() {
@@ -569,11 +563,12 @@ public class ArchiveLogMonitorFrame {
 
 	private void showSqlWindow() {
 		ArchiveLogEntry select = tableWrapper.getSelect();
-		if (null != select) {
-			SQLEditorFrame frame = new SQLEditorFrame(select.getDBConnection());
+		if (null != select && select.isConnected()) {
+			SQLEditorFrame frame = new SQLEditorFrame(select.getDBClient());
 			frame.setExtendedState(Frame.MAXIMIZED_BOTH);
+			frame.setMinimumSize(new Dimension(800, 600));
 			frame.setVisible(true);
-			frame.setTitle("SQL Editor");
+			frame.setTitle("SQL Editor - " + select);
 		}
 	}
 

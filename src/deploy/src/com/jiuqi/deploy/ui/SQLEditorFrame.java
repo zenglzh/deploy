@@ -21,7 +21,6 @@ import javax.swing.event.TableModelListener;
 
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.jsqltool.conn.DbConnection;
 import org.jsqltool.model.CustomTableModel;
 import org.jsqltool.utils.Options;
 
@@ -29,6 +28,7 @@ import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.FormSpecs;
 import com.jgoodies.forms.layout.RowSpec;
+import com.jiuqi.deploy.db.ESBDBClient;
 import com.jiuqi.deploy.util.ImageRes;
 import com.jiuqi.deploy.util.ShowMessage;
 
@@ -39,15 +39,15 @@ public class SQLEditorFrame extends JFrame implements TableModelListener {
 	private RSyntaxTextArea editor;
 	private ShowMessage showMessage;
 	private QueryDataPanel dataPanel;
-	private DbConnection dbconnect;
+	private ESBDBClient dbconnect;
 	private String lastSQL = null;
 	private JLabel statusLabel;
 
 	/**
 	 * Create the dialog.
 	 */
-	public SQLEditorFrame(DbConnection connection) {
-		this.dbconnect = dbconnect;
+	public SQLEditorFrame(ESBDBClient connection) {
+		this.dbconnect = connection;
 		init();
 	}
 

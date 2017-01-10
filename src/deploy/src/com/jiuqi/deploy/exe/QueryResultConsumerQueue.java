@@ -10,11 +10,11 @@ import org.jsqltool.utils.Options;
 
 import com.jiuqi.deploy.intf.IProduct;
 
-public class ConsumerQueue implements Runnable {
+public class QueryResultConsumerQueue implements Runnable {
 	private final BlockTable btable;
 	private Table table;
 
-	public ConsumerQueue(BlockTable btable, Table table) {
+	public QueryResultConsumerQueue(BlockTable btable, Table table) {
 
 		this.btable = btable;
 		this.table = table;

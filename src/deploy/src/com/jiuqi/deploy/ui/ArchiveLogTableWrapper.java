@@ -20,14 +20,13 @@ public class ArchiveLogTableWrapper {
 	private JTable table;
 	private ArchiveLogTableModel tablemode;
 
-	public ArchiveLogTableWrapper() {
-		initUI();
+	public ArchiveLogTableWrapper(JTable table) {
+		this.table = table;
 	}
 
-	private void initUI() {
-		tablemode = new ArchiveLogTableModel();
-
-		table = new JTable(tablemode);
+	public void initUI(ArchiveLogTableModel tablemode) {
+		this.tablemode = tablemode;
+		table.setModel(tablemode);
 		table.getTableHeader().setReorderingAllowed(true);
 		table.getTableHeader().setResizingAllowed(true);
 		table.setDefaultRenderer(Object.class, new ArchiveLogTableRenderer());
@@ -61,7 +60,7 @@ public class ArchiveLogTableWrapper {
 
 	public ArchiveLogEntry getSelect() {
 		int row = getSelectedRow();
-		if (row > 0) {
+		if (row >= 0) {
 			return get(row);
 		}
 		return null;

@@ -17,7 +17,7 @@ import com.jiuqi.deploy.db.JDBCUtil;
  * @author: zenglizhi
  * @time: 2016年12月27日
  */
-public class ArchiveLogEntry implements Runnable {
+public class ArchiveLogEntry {
 	public enum CONNECT {
 		CONNECTING("连接中"), CONNECTED("已连接"), UNCONNECTED("未连接"), ;
 		String status;
@@ -31,6 +31,7 @@ public class ArchiveLogEntry implements Runnable {
 		}
 	}
 
+	private int rowIndex;
 	private String pcode;
 	private String dataSource;
 	private String url;
@@ -168,31 +169,42 @@ public class ArchiveLogEntry implements Runnable {
 		return null;
 	}
 
-	private String user;
-	private String pwd;
+	private String userName;
+	private String password;
 	private String logon;
 
-	public void setUser(String user) {
-		this.user = user;
+	public String getUserName() {
+		return userName;
 	}
 
-	public void setPwd(String pwd) {
-		this.pwd = pwd;
+	public String getPassword() {
+		return password;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
 	}
 
 	public void setLogon(String logon) {
 		this.logon = logon;
 	}
 
-	@Override
-	public void run() {
-		computeDBSize();
+	public String getDBCLassName() {
+		return "oracle.jdbc.driver.OracleDriver";
+	}
+
+	public ESBDBClient getDBClient() {
+		return new ESBDBClient(url, userName, password, logon);
 	}
 
 	public ArchiveLogEntry computeDBSize() {
 		Connection conn = null;
 		try {
-			ESBDBClient dbClient = new ESBDBClient(url, user, pwd, logon);
+			ESBDBClient dbClient = new ESBDBClient(url, userName, password, logon);
 			dbClient.connect();
 			conn = dbClient.getConn();
 			double archiveSize = JDBCUtil.getDbOneFieldSize(conn, Constant.sql_archive);
@@ -212,6 +224,19 @@ public class ArchiveLogEntry implements Runnable {
 			}
 		}
 		return this;
+	}
+
+	public void setRowIndex(int index) {
+		this.rowIndex = index;
+	}
+
+	public int getRowIndex() {
+		return rowIndex;
+	}
+
+	@Override
+	public String toString() {
+		return getUrl();
 	}
 
 }
