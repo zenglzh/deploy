@@ -112,7 +112,9 @@ public class CustomTableModel extends DefaultTableModel {
 
 	public void modify(int row, Vector<Object> rowData) {
 		for (int i = 0; i < getColumnCount(); i++) {
-			setValueAt(rowData.get(i), row, i);
+			if (i < rowData.size()) {
+				setValueAt(rowData.get(i), row, i);
+			}
 		}
 	}
 

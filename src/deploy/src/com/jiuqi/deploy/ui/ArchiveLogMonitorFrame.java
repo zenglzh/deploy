@@ -16,12 +16,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -30,6 +34,7 @@ import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
@@ -41,18 +46,16 @@ import javax.swing.SwingConstants;
 import javax.swing.filechooser.FileFilter;
 
 import org.apache.commons.io.FileUtils;
+import org.jsqltool.utils.Options;
 
 import com.jiuqi.deploy.db.ArchiveMonitorDBInfo;
-import com.jiuqi.deploy.db.Constant;
 import com.jiuqi.deploy.db.ESBDBClient;
-import com.jiuqi.deploy.db.JDBCUtil;
 import com.jiuqi.deploy.exe.DBConnectTable;
 import com.jiuqi.deploy.exe.DBInfoConsumerQueue;
 import com.jiuqi.deploy.exe.DBInfoProducerQueue;
 import com.jiuqi.deploy.exe.QueryMonitor;
 import com.jiuqi.deploy.server.ArchiveLogEntry;
-import com.jiuqi.deploy.server.ArchiveLogEntry.CONNECT;
-import com.jiuqi.deploy.util.ConnectionInfo;
+import com.jiuqi.deploy.server.HistorySQLManage;
 import com.jiuqi.deploy.util.DatabaseConnectionInfo;
 import com.jiuqi.deploy.util.IMonitor;
 import com.jiuqi.deploy.util.ShowMessage;
@@ -77,6 +80,7 @@ public class ArchiveLogMonitorFrame {
 	private JLabel l_refreshTime;
 	private boolean isStarted = false;
 	private final static String[] Start_Title = { "启动", "停止" };
+	private final static String[] Full_Title = { "全屏", "退出全屏" };
 	private File homePath;
 	private List<ArchiveMonitorDBInfo> monitorDBInfos;
 	private Timer timer;
@@ -84,6 +88,7 @@ public class ArchiveLogMonitorFrame {
 	private JButton btnSql;
 	private JButton btnSql_all;
 	private JSeparator separator;
+	private HistorySQLManage sqlmeme;
 
 	private void setStartBtnTitle() {
 		int idt = isStarted ? 1 : 0;
@@ -127,7 +132,40 @@ public class ArchiveLogMonitorFrame {
 		if (!homePath.exists()) {
 			homePath.mkdirs();
 		}
+		init();
 		initialize();
+	}
+
+	/**
+	 * Load from file system the application profile file
+	 * (profile/jsqltool.ini). If profile file doesn't exists, then create a new
+	 * one.
+	 */
+	private void init() {
+		try {
+			Properties p = new Properties();
+			File profileFile = new File(homePath, "jsqltool.ini");
+			if (!profileFile.exists()) {
+				p.setProperty("DATE_FORMAT", "dd-MM-yyyy hh:mm:ss");
+				p.setProperty("ORACLE_EXPLAIN_PLAN_TABLE", "TOAD_PLAN_TABLE");
+				p.setProperty("UPDATE_WHEN_NO_PK", "true");
+				p.setProperty("LANGUAGE", Locale.getDefault().getLanguage());
+				p.storeToXML(new FileOutputStream(profileFile), "JSQLTOOL Properties");
+			} else {
+				p.loadFromXML(new FileInputStream(profileFile));
+			}
+			// set onto Options singleton the values retrieved from profile.
+			Options.getInstance().setDateFormat(p.getProperty("DATE_FORMAT", "dd-MM-yyyy hh:mm:ss"));
+			Options.getInstance().setOracleExplainPlanTable(p.getProperty("ORACLE_EXPLAIN_PLAN_TABLE", "TOAD_PLAN_TABLE"));
+			Options.getInstance().setUpdateWhenNoPK(p.getProperty("UPDATE_WHEN_NO_PK", "true").equals("true"));
+			Options.getInstance().setLanguage(p.getProperty("LANGUAGE", Locale.getDefault().getLanguage()));
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(this.frame, Options.getInstance().getResource("error while loading jsqltool.ini") + ":\n" + ex.getMessage(), Options.getInstance().getResource("error"),
+					JOptionPane.ERROR_MESSAGE);
+		}
+		sqlmeme = new HistorySQLManage();
+		sqlmeme.load(homePath.getAbsolutePath());
 	}
 
 	/**
@@ -157,7 +195,6 @@ public class ArchiveLogMonitorFrame {
 
 		JToolBar toolBar = new JToolBar();
 		panel.add(toolBar, "1, 1, 8, 1");
-		toolBar.setFloatable(false);
 
 		btn_import = new JButton("\u5BFC\u5165\u6570\u636E\u5E93\u6A21\u677F");
 		btn_import.addActionListener(new ActionListener() {
@@ -194,7 +231,6 @@ public class ArchiveLogMonitorFrame {
 			}
 		});
 		toolBar.add(btnSql_all);
-
 		JLabel l_status = new JLabel("");
 		l_status.setFont(new Font("宋体", Font.PLAIN, 12));
 		panel.add(l_status);
@@ -375,7 +411,13 @@ public class ArchiveLogMonitorFrame {
 	}
 
 	private void connecte() {
-		File[] listFiles = homePath.listFiles();
+		File[] listFiles = homePath.listFiles(new java.io.FileFilter() {
+
+			@Override
+			public boolean accept(File f) {
+				return f.getName().endsWith(".xlsx") || f.getName().endsWith(".xls");
+			}
+		});
 		if (null == listFiles || listFiles.length < 1) {
 			showErrorStatus("请先导入数据库连接文件！");
 			return;
@@ -470,20 +512,6 @@ public class ArchiveLogMonitorFrame {
 		}
 	}
 
-	private void refresh2() {
-		if (null == monitorDBInfos) {
-			connecte();
-		}
-		tableWrapper.removeAll();
-		List<ArchiveLogEntry> entryList = query();
-		if (null != entryList) {
-			for (ArchiveLogEntry entry : entryList) {
-				tableWrapper.addRow(entry);
-			}
-			tableWrapper.getTable().repaint();
-		}
-	}
-
 	private IMonitor monitor;
 
 	private void refresh() {
@@ -499,58 +527,6 @@ public class ArchiveLogMonitorFrame {
 		Thread thread = new Thread(new DBInfoConsumerQueue(connectTable, tableWrapper));
 		thread.start();
 
-	}
-
-	private List<ArchiveLogEntry> query() {
-		List<ArchiveLogEntry> logentrylist = new ArrayList<ArchiveLogEntry>();
-		for (ArchiveMonitorDBInfo dbInfo : monitorDBInfos) {
-			ArchiveLogEntry entry = new ArchiveLogEntry();
-			entry.setPcode(dbInfo.getProvinceCode());
-			entry.setUrl(dbInfo.getUrl());
-			entry.setDataSource(dbInfo.getDataSourceName());
-			entry.setDbInitSize(dbInfo.getDbInitSize());
-			entry.setArchiveInitSize(dbInfo.getArchiveInitSize());
-			DatabaseConnectionInfo databaseConnectionInfo = dbInfo.getConnect();
-			Connection conn = null;
-			try {
-				ESBDBClient dbClient = new ESBDBClient(databaseConnectionInfo);
-				dbClient.connect();
-				conn = dbClient.getConn();
-				double archiveSize = JDBCUtil.getDbOneFieldSize(conn, Constant.sql_archive);
-				entry.setConnected(CONNECT.CONNECTED);
-				entry.setArchiveSize(archiveSize);
-				entry.setTableSpaceSize(JDBCUtil.getDbOneFieldSize(conn, Constant.sql_tableSpace));
-			} catch (Exception e) {
-				entry.setConnected(CONNECT.UNCONNECTED);
-				showErrorStatus(e.getMessage());
-				System.out.println(e.getMessage());
-			} finally {
-				if (conn != null) {
-					try {
-						conn.close();
-					} catch (SQLException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-			logentrylist.add(entry);
-		}
-		return logentrylist;
-	}
-
-	private DatabaseConnectionInfo getConnect(ArchiveMonitorDBInfo dbInfo) {
-		ConnectionInfo connectionInfo = new ConnectionInfo();
-		DatabaseConnectionInfo databaseConnectionInfo = connectionInfo.getDatabaseConnectionInfo();
-		if (databaseConnectionInfo == null) {
-			databaseConnectionInfo = new DatabaseConnectionInfo();
-			connectionInfo.setDatabaseConnectionInfo(databaseConnectionInfo);
-		}
-		databaseConnectionInfo.setUrl(dbInfo.getUrl());
-		databaseConnectionInfo.setUsername(dbInfo.getUserName());
-		databaseConnectionInfo.setPassword(dbInfo.getPassword());
-		databaseConnectionInfo.setConnectID(DatabaseConnectionInfo.CONNECTID[0]);
-		connectionInfo.setName(databaseConnectionInfo.toString());// name
-		return databaseConnectionInfo;
 	}
 
 	public boolean isDBValid(DatabaseConnectionInfo connectionInfo) {
@@ -569,6 +545,8 @@ public class ArchiveLogMonitorFrame {
 			frame.setMinimumSize(new Dimension(800, 600));
 			frame.setVisible(true);
 			frame.setTitle("SQL Editor - " + select);
+		} else {
+			showOkStatus("请先从列表中选择一个连接。");
 		}
 	}
 
@@ -579,10 +557,24 @@ public class ArchiveLogMonitorFrame {
 		if (null == monitorDBInfos) {
 			connecte();
 		}
-		SQLAllFrame frame = new SQLAllFrame(monitorDBInfos);
+		final SQLAllFrame frame = new SQLAllFrame(monitorDBInfos, sqlmeme);
 		frame.setMinimumSize(new Dimension(800, 600));
 		frame.setExtendedState(Frame.MAXIMIZED_BOTH);
 		frame.setVisible(true);
 		frame.setTitle("SQL 全库");
+		frame.addWindowListener(new WindowAdapter() {
+
+			public void windowClosing(WindowEvent e) {
+				String lastSql = frame.getLastSQL();
+				if (!StringHelper.isEmpty(lastSql)) {
+					sqlmeme.push(lastSql);
+					sqlmeme.store(homePath.getAbsolutePath());
+				}
+			}
+		});
+	}
+
+	private void screenControl() {
+
 	}
 }

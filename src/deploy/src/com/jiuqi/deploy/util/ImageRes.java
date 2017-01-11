@@ -23,6 +23,9 @@ public class ImageRes {
 	public static final String PNG_WAR = "/images/war.png";
 	public static final String PNG_TABLESPACE = "/images/tablespace.png";
 	public static final String PNG_EXECUTE = "/images/execute.gif";
+	public static final String PNG_STOP = "/images/stop.png";
+	public static final String PNG_HISTORY = "/images/executehistory.gif";
+	public static final String PNG_EXPLAIN = "/images/explainplan.gif";
 
 	static public Image getImage(String imagename) {
 		return Toolkit.getDefaultToolkit().getImage(ImageRes.class.getResource(PLUGIN_PATH + imagename));

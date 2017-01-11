@@ -32,6 +32,10 @@ public class ESBDBClient {
 	public static final int OK_STATUS = 4;
 	public static final int NOT_EXECUTED_OPERATION_STATUS = 5;
 	public static final int EXECUTED_OPERATION_STATUS = 6;
+	public static final int ORACLE_TYPE = 0;
+	public static final int SQLSERVER_TYPE = 1;
+	public static final int ODBC_TYPE = 2;
+	public static final int OTHER_TYPE = 3;
 
 	private String dbhost;
 	private int dbport;
@@ -40,6 +44,7 @@ public class ESBDBClient {
 	private String pass;
 	private String logon;// 连接身份
 	private String url;
+	private int type;// oracle
 	private Connection conn = null;
 	private ResultSet rs = null;
 	private PreparedStatement pstmt = null;
@@ -57,6 +62,7 @@ public class ESBDBClient {
 		this.user = db.getUsername();
 		this.pass = db.getPassword();
 		this.logon = db.getConnectID();
+		this.type = ORACLE_TYPE;
 	}
 
 	public ESBDBClient(String url, String user, String password, String logon) {
@@ -64,6 +70,7 @@ public class ESBDBClient {
 		this.user = user;
 		this.pass = password;
 		this.logon = logon;
+		this.type = ORACLE_TYPE;
 	}
 
 	public ESBDBClient(String dbhost, int dbport, String database, String user, String password, String logon) {
@@ -73,6 +80,7 @@ public class ESBDBClient {
 		this.user = user;
 		this.pass = password;
 		this.logon = logon;
+		this.type = ORACLE_TYPE;
 		// connect();
 		// esbDBClientSQL = new ESBDBClientSQL();
 		// esbDBClientSQL.setConnection(conn);
@@ -113,6 +121,10 @@ public class ESBDBClient {
 			return false;
 		}
 		return true;
+	}
+
+	public int getType() {
+		return type;
 	}
 
 	public String getDatabase() {
