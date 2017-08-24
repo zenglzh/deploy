@@ -5,7 +5,7 @@ package com.jiuqi.deploy.util;
  * @author esalaza
  */
 public class DatabaseConnectionInfo {
-    
+    private String datasource = null;
     private String host     = null;
     private String port     = null;
     private String username = null;
@@ -43,6 +43,14 @@ public class DatabaseConnectionInfo {
 	
 	public void setUrl(String url) {
 		this.url = url;
+	}
+	
+
+	public String getDatasource() {
+		return datasource;
+	}
+	public void setDatasource(String datasource) {
+		this.datasource = datasource;
 	}
 	
 	private void _cluserUrl(){

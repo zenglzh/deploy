@@ -1,14 +1,19 @@
 package com.jiuqi.deploy.ui;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -39,11 +44,13 @@ import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.FormSpecs;
 import com.jgoodies.forms.layout.RowSpec;
 import com.jiuqi.deploy.db.ESBDBClient;
+import com.jiuqi.deploy.demo.AutoCompleteDemo;
 import com.jiuqi.deploy.intf.IPropertyListener;
 import com.jiuqi.deploy.server.ConfigDistEntity;
 import com.jiuqi.deploy.server.ConfigEntity;
 import com.jiuqi.deploy.server.ConfigInfoService;
 import com.jiuqi.deploy.server.Contants;
+import com.jiuqi.deploy.server.HistorySQLManage;
 import com.jiuqi.deploy.util.DatabaseConnectionInfo;
 import com.jiuqi.deploy.util.IOUtils;
 import com.jiuqi.deploy.util.ImageRes;
@@ -82,7 +89,8 @@ public class MainFrame {
 	private boolean resized = true;
 	private DistNodesTableWrapper distTableWrapper;
 	private ConfigInfoService configService;
-
+	private HistorySQLManage sqlmeme;
+	private File homePath;
 	public static void main(String[] args) {
 		_launch();
 	}
@@ -112,7 +120,18 @@ public class MainFrame {
 	 */
 	public MainFrame() {
 		this.pageContext = new PageContext();
+		sqlmeme = new HistorySQLManage();
+		initData();
 		initialize();
+	}
+
+	private void initData() {
+		String userHome = System.getProperty("user.home");
+		this.homePath = new File(userHome + File.separator + ".deploy");
+		if (!homePath.exists()) {
+			homePath.mkdirs();
+		}
+		sqlmeme.load(homePath.getAbsolutePath());		
 	}
 
 	/**
@@ -148,6 +167,16 @@ public class MainFrame {
 			}
 		});
 		menu_1.add(mi_save);
+
+		JMenuItem mi_editor = new JMenuItem("\u7F16\u8F91\u5668");		//编辑器
+		mi_editor.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				AutoCompleteDemo.launch();
+			}
+		});
+		menu_1.add(mi_editor);
 
 		JSeparator separator_4 = new JSeparator();
 		menu_1.add(separator_4);
@@ -186,6 +215,16 @@ public class MainFrame {
 
 		JMenuItem mi_connect = new JMenuItem("\u8FDE\u63A5...");
 		menu_2.add(mi_connect);
+		
+		JMenuItem mi_sqlEditor = new JMenuItem("SQL\u7F16\u8F91\u5668");
+		mi_sqlEditor.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				showSqlEditorFrame();
+			}
+		});
+		menu_2.add(mi_sqlEditor);
 
 		JMenuItem mi_createUser = new JMenuItem("\u521B\u5EFA\u7528\u6237");
 		menu_2.add(mi_createUser);
@@ -915,6 +954,35 @@ public class MainFrame {
 		}
 	}
 
+	
+	protected void showSqlEditorFrame() {
+		if (null != pageContext.getConnectionInfo()) {
+			showSqlEditor();
+		}else {
+			showErrorStatus("请先连接数据库...");
+		}
+	}
+
+	private void showSqlEditor() {
+		DatabaseConnectionInfo connectionInfo = pageContext.getConnectionInfo();
+		ESBDBClient connection = new ESBDBClient(connectionInfo);
+		final SQLEditorFrame frame = new SQLEditorFrame(connection, sqlmeme);
+		frame.setExtendedState(Frame.MAXIMIZED_BOTH);
+		frame.setMinimumSize(new Dimension(800, 600));
+		frame.setVisible(true);
+		frame.setTitle("SQL Editor - " + connection.getUrl());
+		frame.addWindowListener(new WindowAdapter() {
+
+			public void windowClosing(WindowEvent e) {
+				String lastSql = frame.getLastSQL();
+				if (!StringHelper.isEmpty(lastSql)) {
+					sqlmeme.push(lastSql);
+					sqlmeme.store(homePath.getAbsolutePath());
+				}
+			}
+		});
+	}
+	
 	private void setFrameStatus(String status) {
 		frmDna.setTitle(WINDOW_TIITLE + " - " + status);
 	}

@@ -3,11 +3,16 @@
  */
 package com.jiuqi.deploy.ui;
 
+import java.awt.Component;
+import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
+import javax.swing.DefaultCellEditor;
 import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 
 import com.jiuqi.deploy.server.ArchiveLogEntry;
 
@@ -30,6 +35,7 @@ public class ArchiveLogTableWrapper {
 		table.getTableHeader().setReorderingAllowed(true);
 		table.getTableHeader().setResizingAllowed(true);
 		table.setDefaultRenderer(Object.class, new ArchiveLogTableRenderer());
+		table.setDefaultEditor(Object.class , new LogTableEditor());
 		for (int i = 0; i < ArchiveLogTableModel.SIZE.length; i++) {
 			table.getColumnModel().getColumn(i).setMaxWidth(ArchiveLogTableModel.SIZE[i] * 6);
 			table.getColumnModel().getColumn(i).setPreferredWidth(ArchiveLogTableModel.SIZE[i] * 3);
@@ -46,6 +52,12 @@ public class ArchiveLogTableWrapper {
 					else
 						table.setToolTipText(null);// ¹Ø±ÕÌáÊ¾
 				}
+			}
+			
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				// TODO Auto-generated method stub
+				super.mouseClicked(e);
 			}
 		});
 	}
@@ -102,5 +114,27 @@ public class ArchiveLogTableWrapper {
 	public boolean add(ArchiveLogEntry entity) {
 		addRow(entity);
 		return true;
+	}
+	
+	
+	static class LogTableEditor extends DefaultCellEditor{
+
+		private static final long serialVersionUID = 1L;
+
+		public LogTableEditor() {
+			super(new JTextField());
+		}
+		
+		public Component  getTableCellEditorComponent(JTable table,Object value, boolean isSelected,int row, int column){
+			JTextField editor= (JTextField)super.getTableCellEditorComponent(table,value,isSelected,row,column);
+			if(null!=value){
+				editor.setText(value.toString());
+			}
+			if (column == 7 || column == 10){ 
+				editor.setHorizontalAlignment(SwingConstants.RIGHT);
+				editor.setFont(new Font("Serif",Font.ITALIC,12));
+			}
+			return editor;
+		}
 	}
 }

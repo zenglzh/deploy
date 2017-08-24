@@ -51,6 +51,7 @@ public class DBConnectDialog extends JDialog {
 	private JComboBox cb_id;
 	private PageContext pageContxt;
 	private ArrayList<ConnectionInfo> connectionsInfo = null;
+	private JTextField t_sid;
 
 	/**
 	 * Launch the application.
@@ -86,28 +87,45 @@ public class DBConnectDialog extends JDialog {
 		this.pageContxt = pageContext;
 		initsetting();
 		setTitle("\u6570\u636E\u5E93\u8FDE\u63A5");
-		setBounds(100, 100, 375, 327);
+		setBounds(100, 100, 432, 376);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
-		contentPanel.setLayout(new FormLayout(
-				new ColumnSpec[] { FormSpecs.RELATED_GAP_COLSPEC, ColumnSpec.decode("max(53dlu;default)"),
-						FormSpecs.RELATED_GAP_COLSPEC, ColumnSpec.decode("max(97dlu;default):grow"),
-						FormSpecs.RELATED_GAP_COLSPEC, ColumnSpec.decode("13dlu"), FormSpecs.RELATED_GAP_COLSPEC,
-						ColumnSpec.decode("default:grow"), },
-				new RowSpec[] { FormSpecs.RELATED_GAP_ROWSPEC, FormSpecs.DEFAULT_ROWSPEC, FormSpecs.RELATED_GAP_ROWSPEC,
-						RowSpec.decode("13dlu"), FormSpecs.RELATED_GAP_ROWSPEC, FormSpecs.DEFAULT_ROWSPEC,
-						FormSpecs.RELATED_GAP_ROWSPEC, FormSpecs.DEFAULT_ROWSPEC, FormSpecs.RELATED_GAP_ROWSPEC,
-						FormSpecs.DEFAULT_ROWSPEC, FormSpecs.RELATED_GAP_ROWSPEC, FormSpecs.DEFAULT_ROWSPEC,
-						FormSpecs.RELATED_GAP_ROWSPEC, FormSpecs.DEFAULT_ROWSPEC, FormSpecs.RELATED_GAP_ROWSPEC,
-						FormSpecs.DEFAULT_ROWSPEC, }));
+		contentPanel.setLayout(new FormLayout(new ColumnSpec[] {
+				FormSpecs.RELATED_GAP_COLSPEC,
+				ColumnSpec.decode("max(53dlu;default)"),
+				FormSpecs.RELATED_GAP_COLSPEC,
+				ColumnSpec.decode("max(97dlu;default):grow"),
+				FormSpecs.RELATED_GAP_COLSPEC,
+				ColumnSpec.decode("13dlu"),
+				FormSpecs.RELATED_GAP_COLSPEC,
+				ColumnSpec.decode("default:grow"),},
+			new RowSpec[] {
+				FormSpecs.RELATED_GAP_ROWSPEC,
+				FormSpecs.DEFAULT_ROWSPEC,
+				FormSpecs.RELATED_GAP_ROWSPEC,
+				RowSpec.decode("13dlu"),
+				FormSpecs.RELATED_GAP_ROWSPEC,
+				FormSpecs.DEFAULT_ROWSPEC,
+				FormSpecs.RELATED_GAP_ROWSPEC,
+				FormSpecs.DEFAULT_ROWSPEC,
+				FormSpecs.RELATED_GAP_ROWSPEC,
+				FormSpecs.DEFAULT_ROWSPEC,
+				FormSpecs.RELATED_GAP_ROWSPEC,
+				FormSpecs.DEFAULT_ROWSPEC,
+				FormSpecs.RELATED_GAP_ROWSPEC,
+				FormSpecs.DEFAULT_ROWSPEC,
+				FormSpecs.RELATED_GAP_ROWSPEC,
+				FormSpecs.DEFAULT_ROWSPEC,
+				FormSpecs.RELATED_GAP_ROWSPEC,
+				FormSpecs.DEFAULT_ROWSPEC,}));
 		{
 			JLabel label = new JLabel("\u767B\u5F55");
 			label.setFont(new Font("ËÎÌו", Font.BOLD, 12));
 			contentPanel.add(label, "2, 2");
 		}
 		{
-			JLabel lblNewLabel = new JLabel("\u6570\u636E\u5E93");
+			JLabel lblNewLabel = new JLabel("\u6570\u636E\u6E90\u540D\u79F0");
 			contentPanel.add(lblNewLabel, "2, 4, right, default");
 		}
 		{
@@ -149,39 +167,50 @@ public class DBConnectDialog extends JDialog {
 		}
 		{
 			t_port = new JTextField();
+			t_port.setText("1521");
 			contentPanel.add(t_port, "4, 8, fill, default");
 			t_port.setColumns(10);
 		}
 		{
+			JLabel lblNewLabel_5 = new JLabel("\u6570\u636E\u5E93(SID)");
+			contentPanel.add(lblNewLabel_5, "2, 10, right, default");
+		}
+		{
+			t_sid = new JTextField();
+			t_sid.setText("orcl");
+			contentPanel.add(t_sid, "4, 10, fill, top");
+			t_sid.setColumns(10);
+		}
+		{
 			JLabel lblNewLabel_3 = new JLabel("\u7528\u6237\u540D");
-			contentPanel.add(lblNewLabel_3, "2, 10, right, default");
+			contentPanel.add(lblNewLabel_3, "2, 12, right, default");
 		}
 		{
 			t_username = new JTextField();
-			contentPanel.add(t_username, "4, 10, fill, default");
+			contentPanel.add(t_username, "4, 12, fill, default");
 			t_username.setColumns(10);
 		}
 		{
 			JLabel lblNewLabel_4 = new JLabel("\u5BC6\u7801");
-			contentPanel.add(lblNewLabel_4, "2, 12, right, default");
+			contentPanel.add(lblNewLabel_4, "2, 14, right, default");
 		}
 		{
 			t_password = new JPasswordField();
-			contentPanel.add(t_password, "4, 12, fill, default");
+			contentPanel.add(t_password, "4, 14, fill, default");
 		}
 		{
 			JLabel label = new JLabel("\u8FDE\u63A5\u8EAB\u4EFD");
-			contentPanel.add(label, "2, 14, right, default");
+			contentPanel.add(label, "2, 16, right, default");
 		}
 		{
 			cb_id = new JComboBox(DatabaseConnectionInfo.CONNECTID);
-			contentPanel.add(cb_id, "4, 14, fill, default");
+			contentPanel.add(cb_id, "4, 16, fill, default");
 		}
 		{
 			JButton b_test = new JButton("\u6D4B\u8BD5");
-			contentPanel.add(b_test, "2, 16");
+			contentPanel.add(b_test, "2, 18");
 			l_testresult = new JLabel("");
-			contentPanel.add(l_testresult, "4, 16");
+			contentPanel.add(l_testresult, "4, 18");
 			b_test.addActionListener(new ActionListener() {
 
 				@Override
@@ -286,11 +315,12 @@ public class DBConnectDialog extends JDialog {
 			databaseConnectionInfo = new DatabaseConnectionInfo();
 			connectionInfo.setDatabaseConnectionInfo(databaseConnectionInfo);
 		}
+		databaseConnectionInfo.setDatasource(t_database.getText().trim());
 		databaseConnectionInfo.setHost(t_ip.getText().trim());
 		databaseConnectionInfo.setPort(t_port.getText().trim());
 		databaseConnectionInfo.setUsername(t_username.getText().trim());
 		databaseConnectionInfo.setPassword(new String(t_password.getPassword()));
-		databaseConnectionInfo.setSid(t_database.getText().trim());
+		databaseConnectionInfo.setSid(t_sid.getText().trim());
 		databaseConnectionInfo.setConnectID(DatabaseConnectionInfo.CONNECTID[cb_id.getSelectedIndex()]);
 
 		connectionInfo.setName(databaseConnectionInfo.toString());// name
@@ -307,10 +337,10 @@ public class DBConnectDialog extends JDialog {
 		String message = "";
 
 		String databasePassword = new String(t_password.getPassword());
-
+		
 		if (isTextEmpty(t_database.getText())) {
 			isValid = false;
-			message = "Debe ingresar un sid de base de datos";
+			message = "Debe ingresar un datasource de base de datos";
 			requestFocus(t_database);
 		} else if (isTextEmpty(t_ip.getText())) {
 			isValid = false;
@@ -324,7 +354,11 @@ public class DBConnectDialog extends JDialog {
 			isValid = false;
 			message = "Debe ingresar un usuario de base de datos";
 			requestFocus(t_username);
-		} else if (isTextEmpty(databasePassword)) {
+		} else if (isTextEmpty(t_sid.getText())) {
+			isValid = false;
+			message = "Debe ingresar un sid de base de datos";
+			requestFocus(t_sid);
+		}else if (isTextEmpty(databasePassword)) {
 			isValid = false;
 			message = "Debe ingresar un password de base de datos";
 			requestFocus(t_password);
@@ -351,6 +385,7 @@ public class DBConnectDialog extends JDialog {
 		t_port.setBorder(new LineBorder(Color.GRAY));
 		t_username.setBorder(new LineBorder(Color.GRAY));
 		t_password.setBorder(new LineBorder(Color.GRAY));
+		t_sid.setBorder(new LineBorder(Color.GRAY));
 	}
 
 	private void showErrorStatus(String text) {
@@ -375,6 +410,7 @@ public class DBConnectDialog extends JDialog {
 		t_password.setText("");
 		t_database.setText("");
 		t_username.setText("");
+		t_sid.setText("");;
 	}
 
 	public void fillFields(DatabaseConnectionInfo info) {
@@ -382,8 +418,9 @@ public class DBConnectDialog extends JDialog {
 			t_ip.setText(info.getHost());
 			t_port.setText(info.getPort());
 			t_password.setText(info.getPassword());
-			t_database.setText(info.getSid());
+			t_database.setText(info.getDatasource());
 			t_username.setText(info.getUsername());
+			t_sid.setText(info.getSid());
 		}
 	}
 

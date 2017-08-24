@@ -1,6 +1,8 @@
 package com.jiuqi.deploy.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Frame;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -24,9 +26,12 @@ import org.jsqltool.utils.Options;
 
 import com.jiuqi.deploy.db.ArchiveMonitorDBInfo;
 import com.jiuqi.deploy.db.DBTools;
+import com.jiuqi.deploy.db.ESBDBClient;
 import com.jiuqi.deploy.exe.BlockTable;
 import com.jiuqi.deploy.exe.QueryResultConsumerQueue;
 import com.jiuqi.deploy.exe.QueryResultProducerQueue;
+import com.jiuqi.deploy.server.HistorySQLManage;
+import com.jiuqi.deploy.util.DatabaseConnectionInfo;
 import com.jiuqi.deploy.util.IMonitor;
 
 public class AllQueryDataPanel extends JPanel {
@@ -51,13 +56,17 @@ public class AllQueryDataPanel extends JPanel {
 	/** current first row in block */
 	private int inc = 0;
 	private IMonitor monitor;
+	private HistorySQLManage sqlmeme;
 
 	/**
 	 * Create the panel.
+	 * 
+	 * @param sqlmeme
 	 */
-	public AllQueryDataPanel(List<ArchiveMonitorDBInfo> monitorDBInfos, TableModelListener tableModelListener, IMonitor monitor) {
+	public AllQueryDataPanel(List<ArchiveMonitorDBInfo> monitorDBInfos, TableModelListener tableModelListener, IMonitor monitor, HistorySQLManage sqlmeme) {
 		this.monitorDBInfos = monitorDBInfos;
 		this.tableModelListener = tableModelListener;
+		this.sqlmeme = sqlmeme;
 		this.monitor = monitor;
 		jbInit();
 		init();
@@ -86,10 +95,30 @@ public class AllQueryDataPanel extends JPanel {
 	private void jbInit() {
 		this.setLayout(new BorderLayout());
 		table = new Table();
+		table.addMouseListener(new MouseAdapter() {
+
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 2) {
+					selectRow();
+				}
+			}
+		});
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		scrollPane = new JScrollPane();
 		this.add(scrollPane, BorderLayout.CENTER);
 		scrollPane.getViewport().add(table, null);
+	}
+
+	protected void selectRow() {
+		int selectedRow = table.getSelectedRow();
+		ArchiveMonitorDBInfo select = monitorDBInfos.get(selectedRow);
+		ESBDBClient connection = new ESBDBClient(select.getUrl(), select.getUserName(), select.getPassword(), DatabaseConnectionInfo.CONNECTID[0]);
+		SQLEditorFrame frame = new SQLEditorFrame(connection, sqlmeme);
+		frame.setExtendedState(Frame.MAXIMIZED_BOTH);
+		frame.setMinimumSize(new Dimension(800, 600));
+		frame.setVisible(true);
+		frame.setTitle("SQL Editor - " + connection.getUrl());
+		frame.execute(query);
 	}
 
 	public TableModel getTableModel() {

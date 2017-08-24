@@ -118,8 +118,29 @@ public class CustomTableModel extends DefaultTableModel {
 		}
 	}
 
+	@Override
+	public void setValueAt(Object aValue, int row, int column) {
+		if (row < getRowCount() && column < getColumnCount()) {
+			super.setValueAt(aValue, row, column);
+		}
+	}
+
+	@Override
+	public Object getValueAt(int row, int column) {
+		if (row < getRowCount() && column < getColumnCount()) {
+			Vector rowVector = (Vector) dataVector.elementAt(row);
+			if (column < rowVector.size())
+				return super.getValueAt(row, column);
+		}
+		return null;
+	}
+
 	public Class<?> getColumnClass(int col) {
-		return colTypes[col].equals(java.sql.Blob.class) ? String.class : colTypes[col];
+		if (col < colTypes.length) {
+			return colTypes[col].equals(java.sql.Blob.class) ? String.class : colTypes[col];
+		} else {
+			return String.class;
+		}
 	}
 
 	public boolean isBlob(int col) {

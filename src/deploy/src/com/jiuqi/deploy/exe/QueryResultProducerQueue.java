@@ -129,11 +129,11 @@ public class QueryResultProducerQueue extends Thread {
 
 	private void buildBodyData(ResultSet rset) throws SQLException, InterruptedException {
 		int j = 0;
+		IProduct product = bTable.get(dbInfo.getProvinceCode());
+		Vector<Object> row = product.getRow();
+		row.clear();
+		row.add(dbInfo.getProvinceCode());
 		while (rset.next() && j < 1) {
-			IProduct product = bTable.get(dbInfo.getProvinceCode());
-			Vector<Object> row = product.getRow();
-			row.clear();
-			row.add(dbInfo.getProvinceCode());
 			for (int i = 0; i < rset.getMetaData().getColumnCount(); i++)
 				try {
 					row.add(rset.getObject(i + 1));
@@ -141,9 +141,9 @@ public class QueryResultProducerQueue extends Thread {
 					row.add(null);
 					ex.printStackTrace();
 				}
-			bTable.putToQueue(product);
 			j++;
 		}
+		bTable.putToQueue(product);
 	}
 
 	private String getColumnClassName(ResultSet rset, int colIndex) {

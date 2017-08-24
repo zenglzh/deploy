@@ -91,7 +91,7 @@ public class SQLAllFrame extends JFrame implements TableModelListener {
 		});
 		panel.setLayout(new FormLayout(new ColumnSpec[] { ColumnSpec.decode("52px"), FormSpecs.LABEL_COMPONENT_GAP_COLSPEC, ColumnSpec.decode("40px"), ColumnSpec.decode("1dlu"),
 				ColumnSpec.decode("24px"), FormSpecs.LABEL_COMPONENT_GAP_COLSPEC, ColumnSpec.decode("18px"), FormSpecs.LABEL_COMPONENT_GAP_COLSPEC, ColumnSpec.decode("51px"),
-				ColumnSpec.decode("1dlu"), ColumnSpec.decode("49px"), FormSpecs.LABEL_COMPONENT_GAP_COLSPEC, ColumnSpec.decode("1px"), }, new RowSpec[] { RowSpec.decode("27px"), }));
+				ColumnSpec.decode("1dlu"), ColumnSpec.decode("49px"), FormSpecs.LABEL_COMPONENT_GAP_COLSPEC, ColumnSpec.decode("216px:grow"), }, new RowSpec[] { RowSpec.decode("27px"), }));
 
 		chk_auto = new JCheckBox("\u81EA\u52A8");
 		panel.add(chk_auto, "1, 1, left, center");
@@ -137,7 +137,7 @@ public class SQLAllFrame extends JFrame implements TableModelListener {
 		editor.setCodeFoldingEnabled(true);
 		splitPane.add(editor, JSplitPane.TOP);
 		monitor = new QueryMonitor(showMessage);
-		this.dataPanel = new AllQueryDataPanel(monitorDBInfos, this, monitor);// this
+		this.dataPanel = new AllQueryDataPanel(monitorDBInfos, this, monitor, sqlmeme);// this
 		splitPane.add(dataPanel, JSplitPane.BOTTOM);
 		splitPane.setDividerLocation(150);
 
@@ -187,7 +187,7 @@ public class SQLAllFrame extends JFrame implements TableModelListener {
 
 		}, sqlmeme);
 		dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-		dialog.setTitle("ÀúÊ·SQL");
+		dialog.setTitle("SQL...");
 		dialog.setModal(true);
 		dialog.setLocationRelativeTo(SQLAllFrame.this);
 		dialog.setVisible(true);

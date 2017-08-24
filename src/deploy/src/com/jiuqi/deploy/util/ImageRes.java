@@ -7,7 +7,7 @@ import javax.swing.ImageIcon;
 
 public class ImageRes {
 
-	public static final String PLUGIN_PATH = "/resource";
+	public static final String PLUGIN_PATH = Resource.PLUGIN_PATH;
 
 	public static final String ICO_DEPLAY = "/images/deplay.ico";
 	public static final String PNG_CLOSE = "/images/close.png";

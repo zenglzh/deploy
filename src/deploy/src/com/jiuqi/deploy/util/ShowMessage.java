@@ -14,12 +14,13 @@ public class ShowMessage {
 	}
 
 	private void showAwhile(final String msg, int delay) {
-		Timer t = new Timer();
+		final Timer t = new Timer();
 		t.schedule(new TimerTask() {
 
 			@Override
 			public void run() {
 				l_message.setText(msg);
+				t.cancel();//
 			}
 		}, delay);
 	}
@@ -27,6 +28,7 @@ public class ShowMessage {
 	public void wshow(String msg) {
 		wshow(msg, Color.DARK_GRAY);
 	}
+
 	public void wshow(String msg, Color color) {
 		show(msg, color);
 		int delay = 3000;
@@ -39,8 +41,6 @@ public class ShowMessage {
 		l_message.setText(msg);
 		l_message.setForeground(color);
 	}
-
-
 
 	private void showErrorStatus(String text) {
 		l_message.setText(text);

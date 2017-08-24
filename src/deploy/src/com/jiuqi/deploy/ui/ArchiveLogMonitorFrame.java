@@ -540,11 +540,21 @@ public class ArchiveLogMonitorFrame {
 	private void showSqlWindow() {
 		ArchiveLogEntry select = tableWrapper.getSelect();
 		if (null != select && select.isConnected()) {
-			SQLEditorFrame frame = new SQLEditorFrame(select.getDBClient());
+			final SQLEditorFrame frame = new SQLEditorFrame(select.getDBClient(), sqlmeme);
 			frame.setExtendedState(Frame.MAXIMIZED_BOTH);
 			frame.setMinimumSize(new Dimension(800, 600));
 			frame.setVisible(true);
 			frame.setTitle("SQL Editor - " + select);
+			frame.addWindowListener(new WindowAdapter() {
+
+				public void windowClosing(WindowEvent e) {
+					String lastSql = frame.getLastSQL();
+					if (!StringHelper.isEmpty(lastSql)) {
+						sqlmeme.push(lastSql);
+						sqlmeme.store(homePath.getAbsolutePath());
+					}
+				}
+			});
 		} else {
 			showOkStatus("请先从列表中选择一个连接。");
 		}
